@@ -396,6 +396,8 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	)
 	namespace := certificateNamespace(cert)
 
+	log.Println("Starting processing on cert: %s", cert.Spec.Domain)
+
 	// Fetch current certificate data from k8s
 	s, err := p.k8s.getSecret(namespace, p.secretName(cert))
 	if err != nil {
