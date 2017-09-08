@@ -28,7 +28,7 @@ The following Kubernetes Certificate configuration assume the following:
 - The `psg.io` domain is managed by [Google Cloud DNS](https://cloud.google.com/dns)
 
 ```
-apiVersion: "stable.k8s.psg.io/v1"
+apiVersion: "stable.liquidweb.com/v1"
 kind: "Certificate"
 metadata:
   name: "psg-dot-io"

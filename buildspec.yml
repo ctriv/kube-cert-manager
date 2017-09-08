@@ -11,7 +11,7 @@ version: 0.1
 environment_variables:
   plaintext:
     APP_NAME: "kube-cert-manager"
-    PACKAGE: "stable.k8s.psg.io"
+    PACKAGE: "stable.liquidweb.com"
     DOCKER_REPO: "whereisaaron"
     CONTAINER_VERSION: "0.5.0"
     DOCKER_HUB_USERNAME: "MISSING - Specify in CodeBuild project or start command"

@@ -3,10 +3,10 @@ kind: Ingress
 metadata:
   name: ingress
   labels:
-    stable.k8s.psg.io/kcm.class: "default"
+    stable.liquidweb.com/kcm.class: "default"
   annotations:
-    stable.k8s.psg.io/kcm.provider: "googlecloud"
-    stable.k8s.psg.io/kcm.email: "admin@psg.io"
+    stable.liquidweb.com/kcm.provider: "googlecloud"
+    stable.liquidweb.com/kcm.email: "admin@psg.io"
 spec:
   tls:
   - hosts:

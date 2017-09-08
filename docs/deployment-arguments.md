@@ -41,5 +41,5 @@ If you wish to build your own version of the certificate manager, you can option
 label/annotation/resource namespace prefix. E.g. `-cert-namespace=example.com -tag-prefix=kcm.example.com`.
 You need to ensure your registered Certficate Third Part Resource and Ingress labels/annotations match this setting.
 
-- `-cert-namespace` - Namespace to Certificate Third Party Resources, defaults to `stable.k8s.psg.io`
-- `-tag-prefix` - Prefix added to labels and annotations, defaults to `stable.k8s.psg.io/kcm.`
+- `-cert-namespace` - Namespace to Certificate Third Party Resources, defaults to `stable.liquidweb.com`
+- `-tag-prefix` - Prefix added to labels and annotations, defaults to `stable.liquidweb.com/kcm.`

@@ -1,4 +1,4 @@
-package: stable.k8s.psg.io
+package: stable.liquidweb.com
 import:
 - package: github.com/boltdb/bolt
 - package: github.com/pkg/errors

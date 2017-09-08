@@ -801,7 +801,7 @@ func addTagPrefix(prefix, tag string) string {
 	if prefix == "" {
 		return tag
 	} else if strings.HasSuffix(prefix, ".") {
-		// Support the deprecated "stable.k8s.psg.io/kcm." prefix
+		// Support the deprecated "stable.liquidweb.com/kcm." prefix
 		return prefix + tag
 	}
 	return prefix + "/" + tag

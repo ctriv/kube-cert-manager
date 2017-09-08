@@ -11,7 +11,7 @@ cat certs/psg-dot-io.yaml
 ```
 
 ```
-apiVersion: "stable.k8s.psg.io/v1"
+apiVersion: "stable.liquidweb.com/v1"
 kind: "Certificate"
 metadata:
   name: "psg-dot-io"

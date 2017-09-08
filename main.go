@@ -74,8 +74,8 @@ func main() {
 	flag.StringVar(&certSecretPrefix, "cert-secret-prefix", "", "The prefix to use for certificate secrets")
 	flag.IntVar(&syncInterval, "sync-interval", 30, "Sync interval in seconds")
 	flag.StringVar(&dataDir, "data-dir", "/var/lib/cert-manager", "Data directory path")
-	flag.StringVar(&certNamespace, "cert-namespace", "stable.k8s.psg.io", "Namespace for the Certificate Third Party Resource")
-	flag.StringVar(&tagPrefix, "tag-prefix", "stable.k8s.psg.io/kcm.", "Prefix added to labels and annotations")
+	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
+	flag.StringVar(&tagPrefix, "tag-prefix", "stable.liquidweb.com/kcm.", "Prefix added to labels and annotations")
 	flag.Var((*listFlag)(&namespaces), "namespaces", "Comma-separated list of namespaces to monitor. The empty list means all namespaces")
 	flag.StringVar(&class, "class", "default", "Class label for resources managed by this certificate manager")
 	flag.StringVar(&defaultProvider, "default-provider", "", "Default handler to handle ACME challenges")
@@ -130,7 +130,7 @@ func main() {
 	}
 
 	groupVersion := unversioned.GroupVersion{
-		Group:   "stable.k8s.psg.io",
+		Group:   "stable.liquidweb.com",
 		Version: "v1",
 	}
 	// Create a client for the certificate TPR too

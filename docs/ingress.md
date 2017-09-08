@@ -14,12 +14,12 @@ request certificates.
 
 ## Required Label
 
-- `stable.k8s.psg.io/kcm.class` - Set to `"default"` or the value you set with the `-class` argument.
+- `stable.liquidweb.com/kcm.class` - Set to `"default"` or the value you set with the `-class` argument.
 
 ## Optional Annotations
 
-- `stable.k8s.psg.io/kcm.provider` - The same as `spec.provider` in [Certificate Resources](certificate-resources.md). Optional, if you set the `-default-email` argument.
-- `stable.k8s.psg.io/kcm.email` - The same as `spec.email` in [Certificate Resources](certificate-resources.md). Optional, if you set the `-default-provider` argument.
+- `stable.liquidweb.com/kcm.provider` - The same as `spec.provider` in [Certificate Resources](certificate-resources.md). Optional, if you set the `-default-email` argument.
+- `stable.liquidweb.com/kcm.email` - The same as `spec.email` in [Certificate Resources](certificate-resources.md). Optional, if you set the `-default-provider` argument.
 
 ## Example Ingress resource
 
@@ -33,10 +33,10 @@ kind: Ingress
 metadata:
   name: ingress
   labels:
-    stable.k8s.psg.io/kcm.class: "default"
+    stable.liquidweb.com/kcm.class: "default"
   annotations:
-    stable.k8s.psg.io/kcm.provider: "googlecloud"
-    stable.k8s.psg.io/kcm.email: "admin@psg.io"
+    stable.liquidweb.com/kcm.provider: "googlecloud"
+    stable.liquidweb.com/kcm.email: "admin@psg.io"
 spec:
   tls:
   - hosts:
@@ -62,9 +62,9 @@ The certificate manager will then look for the deprecated `enabled` annotation i
 
 ```
   annotations:
-    stable.k8s.psg.io/kcm.enabled: "true"
-    stable.k8s.psg.io/kcm.provider: "googlecloud"
-    stable.k8s.psg.io/kcm.email: "admin@psg.io"
+    stable.liquidweb.com/kcm.enabled: "true"
+    stable.liquidweb.com/kcm.provider: "googlecloud"
+    stable.liquidweb.com/kcm.email: "admin@psg.io"
 ```
 
 If the `-class` argument is set to any value, then the certificate manager will only handle all resources 
