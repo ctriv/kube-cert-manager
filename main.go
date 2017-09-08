@@ -63,7 +63,6 @@ func main() {
 		certNamespace    string
 		tagPrefix        string
 		namespaces       []string
-		class            string
 		defaultProvider  string
 		defaultEmail     string
 		renewBeforeDays  int
@@ -77,7 +76,6 @@ func main() {
 	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
 	flag.StringVar(&tagPrefix, "tag-prefix", "stable.liquidweb.com/kcm.", "Prefix added to labels and annotations")
 	flag.Var((*listFlag)(&namespaces), "namespaces", "Comma-separated list of namespaces to monitor. The empty list means all namespaces")
-	flag.StringVar(&class, "class", "default", "Class label for resources managed by this certificate manager")
 	flag.StringVar(&defaultProvider, "default-provider", "", "Default handler to handle ACME challenges")
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
@@ -113,7 +111,6 @@ func main() {
 	}
 
 	log.Println("Starting Kubernetes Certificate Controller...")
-	log.Println("All errors logs are forwarded to k8s events. To watch the logs use 'kubectl get events -w -n mynamespace'")
 
 	var k8sConfig *rest.Config
 	if kubeconfig == "" {
@@ -162,7 +159,7 @@ func main() {
 	}
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, class, defaultProvider, defaultEmail, db, renewBeforeDays)
+	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}
@@ -172,7 +169,6 @@ func main() {
 		wg.Add(1)
 		go p.watchKubernetesEvents(
 			v1.NamespaceAll,
-			p.getLabelSelector(),
 			&wg,
 			doneChan)
 	} else {
@@ -180,7 +176,6 @@ func main() {
 			wg.Add(1)
 			go p.watchKubernetesEvents(
 				namespace,
-				p.getLabelSelector(),
 				&wg,
 				doneChan,
 			)

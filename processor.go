@@ -18,7 +18,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -44,12 +43,7 @@ import (
 	"github.com/xenolf/lego/providers/dns/route53"
 	"github.com/xenolf/lego/providers/dns/vultr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/unversioned"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
-	"k8s.io/client-go/pkg/labels"
-	"k8s.io/client-go/pkg/selection"
 	"k8s.io/client-go/rest"
 )
 
@@ -60,7 +54,6 @@ type CertProcessor struct {
 	certNamespace    string
 	tagPrefix        string
 	namespaces       []string
-	class            string
 	defaultProvider  string
 	defaultEmail     string
 	db               *bolt.DB
@@ -80,7 +73,6 @@ func NewCertProcessor(
 	certNamespace string,
 	tagPrefix string,
 	namespaces []string,
-	class string,
 	defaultProvider string,
 	defaultEmail string,
 	db *bolt.DB,
@@ -92,7 +84,6 @@ func NewCertProcessor(
 		certNamespace:    certNamespace,
 		tagPrefix:        tagPrefix,
 		namespaces:       namespaces,
-		class:            class,
 		defaultProvider:  defaultProvider,
 		defaultEmail:     defaultEmail,
 		db:               db,
@@ -191,13 +182,13 @@ func (p *CertProcessor) getSecrets() ([]v1.Secret, error) {
 	var secrets []v1.Secret
 	if len(p.namespaces) == 0 {
 		var err error
-		secrets, err = p.k8s.getSecrets(v1.NamespaceAll, p.getLabelSelector())
+		secrets, err = p.k8s.getSecrets(v1.NamespaceAll)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error while fetching secret list")
 		}
 	} else {
 		for _, namespace := range p.namespaces {
-			s, err := p.k8s.getSecrets(namespace, p.getLabelSelector())
+			s, err := p.k8s.getSecrets(namespace)
 			if err != nil {
 				return nil, errors.Wrap(err, "Error while fetching secret list")
 			}
@@ -211,13 +202,13 @@ func (p *CertProcessor) getCertificates() ([]Certificate, error) {
 	var certificates []Certificate
 	if len(p.namespaces) == 0 {
 		var err error
-		certificates, err = p.k8s.getCertificates(v1.NamespaceAll, p.getLabelSelector())
+		certificates, err = p.k8s.getCertificates(v1.NamespaceAll)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error while fetching certificate list")
 		}
 	} else {
 		for _, namespace := range p.namespaces {
-			certs, err := p.k8s.getCertificates(namespace, p.getLabelSelector())
+			certs, err := p.k8s.getCertificates(namespace)
 			if err != nil {
 				return nil, errors.Wrap(err, "Error while fetching certificate list")
 			}
@@ -227,58 +218,15 @@ func (p *CertProcessor) getCertificates() ([]Certificate, error) {
 	return certificates, nil
 }
 
-func (p *CertProcessor) getIngresses() ([]v1beta1.Ingress, error) {
-	var ingresses []v1beta1.Ingress
-	if len(p.namespaces) == 0 {
-		var err error
-		if err != nil {
-			return nil, errors.Wrap(err, "Error creating API URL for ingress list")
-		}
-		ingresses, err = p.k8s.getIngresses(v1.NamespaceAll, p.getLabelSelector())
-		if err != nil {
-			return nil, errors.Wrap(err, "Error while fetching ingress list")
-		}
-	} else {
-		for _, namespace := range p.namespaces {
-			igs, err := p.k8s.getIngresses(namespace, p.getLabelSelector())
-			if err != nil {
-				return nil, errors.Wrap(err, "Error while fetching ingress list")
-			}
-			ingresses = append(ingresses, igs...)
-		}
-	}
-	return ingresses, nil
-}
 
-func (p *CertProcessor) syncIngresses() error {
-	p.Lock.Lock()
-	defer p.Lock.Unlock()
 
-	ingresses, err := p.getIngresses()
-	if err != nil {
-		return err
-	}
-
-	var wg sync.WaitGroup
-	for _, ingress := range ingresses {
-		wg.Add(1)
-		go func(ingress v1beta1.Ingress) {
-			p.processIngress(ingress)
-			wg.Done()
-		}(ingress)
-	}
-	wg.Wait()
-	return nil
-}
-
-func (p *CertProcessor) watchKubernetesEvents(namespace string, selector labels.Selector, wg *sync.WaitGroup, doneChan <-chan struct{}) {
+func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGroup, doneChan <-chan struct{}) {
 	if namespace == v1.NamespaceAll {
-		log.Printf("Watching certificates and ingresses in all namespaces")
+		log.Printf("Watching certificates in all namespaces")
 	} else {
-		log.Printf("Watchining certificates and ingresses in namespace %s", namespace)
+		log.Printf("Watching certificates in namespace %s", namespace)
 	}
-	certEvents := p.k8s.monitorCertificateEvents(namespace, selector, doneChan)
-	ingressEvents := p.k8s.monitorIngressEvents(namespace, selector, doneChan)
+	certEvents := p.k8s.monitorCertificateEvents(namespace, doneChan)
 	for {
 		select {
 		case event := <-certEvents:
@@ -286,8 +234,6 @@ func (p *CertProcessor) watchKubernetesEvents(namespace string, selector labels.
 			if err != nil {
 				log.Printf("Error while processing certificate event: %v", err)
 			}
-		case event := <-ingressEvents:
-			p.processIngressEvent(event)
 		case <-doneChan:
 			wg.Done()
 			log.Println("Stopped certificate event watcher.")
@@ -302,9 +248,6 @@ func (p *CertProcessor) maintenance(syncInterval time.Duration, wg *sync.WaitGro
 		case <-time.After(syncInterval):
 			if err := p.syncCertificates(); err != nil {
 				log.Printf("Error while synchronizing certificates during refresh: %s", err)
-			}
-			if err := p.syncIngresses(); err != nil {
-				log.Printf("Error while synchronizing ingresses during refresh: %s", err)
 			}
 			if err := p.gcSecrets(); err != nil {
 				log.Printf("Error cleaning up secrets: %s", err)
@@ -574,7 +517,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 
 	// Convert cert data to k8s secret
 	isUpdate := s != nil
-	s = acmeCert.ToSecret(p.tagPrefix, p.class)
+	s = acmeCert.ToSecret()
 	s.Name = p.secretName(cert)
 
 	if isUpdate {
@@ -627,152 +570,21 @@ func (p *CertProcessor) gcSecrets() error {
 	if err != nil {
 		return err
 	}
-	ingresses, err := p.getIngresses()
-	if err != nil {
-		return err
-	}
-	for _, ingress := range ingresses {
-		certs = append(certs, ingressCertificates(p, ingress)...)
-	}
 	usedSecrets := map[string]bool{}
 	for _, cert := range certs {
 		usedSecrets[cert.Metadata.Namespace+" "+p.secretName(cert)] = true
 	}
 	for _, secret := range secrets {
-		// Only check for the deprecated "enabled" annotation if not using the "class" feature
-		if p.class == "" && secret.Annotations[addTagPrefix(p.tagPrefix, "enabled")] != "true" {
-			continue
-		}
 		if usedSecrets[secret.Namespace+" "+secret.Name] {
 			continue
 		}
-		log.Printf("Deleting unused secret %s in namespace %s", secret.Name, secret.Namespace)
-		if err := p.k8s.deleteSecret(secret.Namespace, secret.Name); err != nil {
-			return err
-		}
+		// need to replace to to use an annotation to mark the secret as from us
+		// log.Printf("Deleting unused secret %s in namespace %s", secret.Name, secret.Namespace)
+		// if err := p.k8s.deleteSecret(secret.Namespace, secret.Name); err != nil {
+		// 	return err
+		// }
 	}
 	return nil
-}
-
-func (p *CertProcessor) processIngressEvent(c IngressEvent) {
-	p.Lock.Lock()
-	defer p.Lock.Unlock()
-	switch c.Type {
-	case "ADDED", "MODIFIED":
-		p.processIngress(c.Object)
-	}
-}
-
-func ingressCertificates(p *CertProcessor, ingress v1beta1.Ingress) []Certificate {
-	// The enabled annotation is deprecated when a class label is used
-	if p.class == "" && ingress.Annotations[addTagPrefix(p.tagPrefix, "enabled")] != "true" {
-		return nil
-	}
-	var certs []Certificate
-	provider := valueOrDefault(ingress.Annotations[addTagPrefix(p.tagPrefix, "provider")], p.defaultProvider)
-	email := valueOrDefault(ingress.Annotations[addTagPrefix(p.tagPrefix, "email")], p.defaultEmail)
-	if provider == "" || email == "" {
-		return nil
-	}
-	for _, tls := range ingress.Spec.TLS {
-		if len(tls.Hosts) < 1 {
-			continue
-		}
-		cert := Certificate{
-			TypeMeta: unversioned.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Certificate",
-			},
-			Metadata: api.ObjectMeta{
-				Namespace: ingress.Namespace,
-			},
-			Spec: CertificateSpec{
-				Domain:     tls.Hosts[0],
-				Provider:   provider,
-				Email:      email,
-				SecretName: tls.SecretName,
-				AltNames:   tls.Hosts[1:],
-			},
-		}
-		certs = append(certs, cert)
-	}
-	return certs
-}
-
-func (p *CertProcessor) processIngress(ingress v1beta1.Ingress) {
-	if p.class == "" && ingress.Annotations[addTagPrefix(p.tagPrefix, "enabled")] != "true" {
-		return
-	}
-	source := v1.EventSource{
-		Component: "kube-cert-manager",
-	}
-	var certs []Certificate
-	provider := valueOrDefault(ingress.Annotations[addTagPrefix(p.tagPrefix, "provider")], p.defaultProvider)
-	email := valueOrDefault(ingress.Annotations[addTagPrefix(p.tagPrefix, "email")], p.defaultEmail)
-	for _, tls := range ingress.Spec.TLS {
-		if len(tls.Hosts) == 0 {
-			continue
-		}
-		altNames := tls.Hosts[1:]
-		cert := Certificate{
-			TypeMeta: unversioned.TypeMeta{
-				APIVersion: "v1",
-				Kind:       "Certificate",
-			},
-			Metadata: api.ObjectMeta{
-				Namespace: ingress.Namespace,
-			},
-			Spec: CertificateSpec{
-				Domain:     tls.Hosts[0],
-				Provider:   provider,
-				Email:      email,
-				SecretName: tls.SecretName,
-				AltNames:   altNames,
-			},
-		}
-		certs = append(certs, cert)
-	}
-	if len(certs) > 0 && (provider == "" || email == "") {
-		p.k8s.createEvent(v1.Event{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace: ingress.Namespace,
-			},
-			InvolvedObject: ingressReference(ingress, ""),
-			Reason:         "ACMEMissingAnnotation",
-			Message:        "Couldn't create certificates: missing email or provider annotation",
-			Source:         source,
-			Type:           "Warning",
-		})
-		return
-	}
-	for _, cert := range certs {
-		processed, err := p.processCertificate(cert)
-		if err != nil {
-			p.k8s.createEvent(v1.Event{
-				ObjectMeta: v1.ObjectMeta{
-					Namespace: ingress.Namespace,
-				},
-				InvolvedObject: ingressReference(ingress, ""),
-				Reason:         "ACMEError",
-				Message:        fmt.Sprintf("Couldn't create certificate for secret %s: %s", cert.Spec.SecretName, err),
-				Source:         source,
-				Type:           "Warning",
-			})
-			continue
-		}
-		if processed {
-			p.k8s.createEvent(v1.Event{
-				ObjectMeta: v1.ObjectMeta{
-					Namespace: ingress.Namespace,
-				},
-				InvolvedObject: ingressReference(ingress, ""),
-				Reason:         "ACMEProcessed",
-				Message:        fmt.Sprintf("Processed ACME certificate for secret: %s", cert.Spec.SecretName),
-				Source:         source,
-				Type:           "Normal",
-			})
-		}
-	}
 }
 
 func certificateNamespace(c Certificate) string {
@@ -782,30 +594,6 @@ func certificateNamespace(c Certificate) string {
 	return "default"
 }
 
-func (p *CertProcessor) getLabelSelector() labels.Selector {
-	if p.class != "" {
-		r, err := labels.NewRequirement(
-			addTagPrefix(p.tagPrefix, "class"),
-			selection.Equals,
-			[]string{p.class},
-		)
-		if err != nil {
-			log.Fatalf("unable to create class-equals requirement: %v", err)
-		}
-		return labels.NewSelector().Add(*r)
-	}
-	return nil
-}
-
-func addTagPrefix(prefix, tag string) string {
-	if prefix == "" {
-		return tag
-	} else if strings.HasSuffix(prefix, ".") {
-		// Support the deprecated "stable.liquidweb.com/kcm." prefix
-		return prefix + tag
-	}
-	return prefix + "/" + tag
-}
 
 func valueOrDefault(a, b string) string {
 	if a != "" {

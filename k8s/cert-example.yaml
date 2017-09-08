@@ -1,9 +1,9 @@
 apiVersion: "stable.liquidweb.com/v1"
 kind: "Certificate"
 metadata:
-  name: "psg-dot-io"
+  name: "cert-test-one"
 spec:
-  domain: "psg.io"
-  email: "admin@psg.io"
-  provider: "googlecloud"
-  secretName: cert-psg.io
+  domain: "triv.org"
+  email: "creinhardt@liquidweb.com"
+  provider: "http"
+  secretName: cert-test-one-tls
