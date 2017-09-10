@@ -1,4 +1,4 @@
-package: stable.liquidweb.com
+package: liquidweb.com/kube-cert-manager
 import:
 - package: github.com/boltdb/bolt
 - package: github.com/pkg/errors
