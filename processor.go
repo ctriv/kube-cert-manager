@@ -112,7 +112,7 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 
 	switch provider {
 	case "http":
-		acmeClient.SetHTTPAddress(":8080")
+		acmeClient.SetHTTPAddress(":5002")
 		acmeClient.ExcludeChallenges([]acme.Challenge{acme.DNS01, acme.TLSSNI01})
 		return acmeClient, &p.HTTPLock, nil
 	case "tls":
@@ -338,8 +338,6 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		acmeClientMutex *sync.Mutex
 	)
 	namespace := certificateNamespace(cert)
-
-	log.Println("Starting processing on cert: %s", cert.Spec.Domain)
 
 	// Fetch current certificate data from k8s
 	s, err := p.k8s.getSecret(namespace, p.secretName(cert))
