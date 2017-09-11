@@ -187,11 +187,17 @@ func (u *ACMEUserData) GetPrivateKey() crypto.PrivateKey {
 }
 
 // ToSecret creates a Kubernetes Secret from an ACME Certificate
-func (c *ACMECertData) ToSecret() *v1.Secret {
+func (c *ACMECertData) ToSecret(name string, labels map[string]string) *v1.Secret {
 	var metadata v1.ObjectMeta
+	metadata.Name = name
 
 	metadata.Labels = map[string]string{
 		"domain": c.DomainName,
+		"creator": "kube-cert-manager",
+	}
+
+	for key, value := range labels {
+	    metadata.Labels[key] = value
 	}
 
 	data := make(map[string][]byte)

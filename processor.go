@@ -515,8 +515,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 
 	// Convert cert data to k8s secret
 	isUpdate := s != nil
-	s = acmeCert.ToSecret()
-	s.Name = p.secretName(cert)
+	s = acmeCert.ToSecret(p.secretName(cert), cert.Metadata.Labels)
 
 	if isUpdate {
 		log.Printf("Updating secret %v in namespace %v for domain %v", s.Name, namespace, cert.Spec.Domain)
