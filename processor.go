@@ -549,6 +549,15 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		Type: "Normal",
 	})
 
+	now, _ := time.Now().UTC().MarshalText()
+	exp, _ := acmeCert.ExpiresDate().MarshalText()
+
+	p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
+		Provisioned: "true",
+		CreatedDate: string(now),
+		ExpiresDate: string(exp),
+	})
+
 	return true, nil
 }
 
