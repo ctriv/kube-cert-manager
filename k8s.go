@@ -63,10 +63,21 @@ func (k K8sClient) updateCertStatus(namespace string, name string, status Certif
 
 	update["status"] = status
 
-	raw_patch, json_error := json.Marshal(update);
+	patch_err := k._doCertPatch(namespace, name, update);
+
+	if patch_err != nil {
+		log.Printf("ERROR updating status: %v\n", patch_err)
+	} else {
+		log.Printf("UPDATED status for %s/%s: %#v\n", namespace, name, status)
+	}
+}
+
+
+func (k K8sClient) _doCertPatch(namespace string, name string, obj interface{}) error {
+	raw_patch, json_error := json.Marshal(obj)
 
 	if json_error != nil {
-		log.Printf("ERROR: could not marshall update into json: %v", json_error)
+		return errors.Wrapf(json_error, "could not marshall update into json")
 	}
 
 	patch_err := k.certClient.Patch("application/merge-patch+json").
@@ -76,12 +87,10 @@ func (k K8sClient) updateCertStatus(namespace string, name string, status Certif
 		Body(raw_patch).
 		Do().
 		Error()
-	if patch_err != nil {
-		log.Printf("ERROR updating status: %v\n", patch_err)
-	} else {
-		log.Printf("UPDATED status for %s/%s: %#v\n", namespace, name, status)
-	}
+
+	return patch_err
 }
+
 
 func (k K8sClient) getSecret(namespace string, key string) (*v1.Secret, error) {
 	secret, err := k.c.Core().Secrets(namespace).Get(key)
@@ -119,6 +128,8 @@ func (k K8sClient) deleteSecret(namespace string, key string) error {
 
 func (k K8sClient) getSecrets(namespace string) ([]v1.Secret, error) {
 	listOpts := v1.ListOptions{}
+	listOpts.LabelSelector = "creator=kube-cert-manager"
+
 	list, err := k.c.Secrets(namespace).List(listOpts)
 	if err != nil {
 		return nil, err

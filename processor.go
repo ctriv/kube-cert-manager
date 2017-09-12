@@ -585,10 +585,10 @@ func (p *CertProcessor) gcSecrets() error {
 			continue
 		}
 		// need to replace to to use an annotation to mark the secret as from us
-		// log.Printf("Deleting unused secret %s in namespace %s", secret.Name, secret.Namespace)
-		// if err := p.k8s.deleteSecret(secret.Namespace, secret.Name); err != nil {
-		// 	return err
-		// }
+		 log.Printf("Deleting unused secret %s in namespace %s", secret.Name, secret.Namespace)
+		if err := p.k8s.deleteSecret(secret.Namespace, secret.Name); err != nil {
+			return err
+		}
 	}
 	return nil
 }
