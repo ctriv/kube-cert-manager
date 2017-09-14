@@ -339,10 +339,15 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	)
 	namespace := certificateNamespace(cert)
 
+	if cert.Status.Provisioned == "false" {
+		log.Printf("Cert %s/%s has already failed to provision.  Skipping.", namespace, cert.Metadata.Name)
+		return true, nil
+	}
+
 	// Fetch current certificate data from k8s
 	s, err := p.k8s.getSecret(namespace, p.secretName(cert))
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while fetching certificate acme data for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while fetching certificate acme data for domain %v", cert.Spec.Domain)
 	}
 
 	altNames := normalizeHostnames(cert.Spec.AltNames)
@@ -357,18 +362,18 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	if s != nil && getDomainFromLabel(s, p.tagPrefix) == cert.Spec.Domain && sameAltNames {
 		acmeCert, err = NewACMECertDataFromSecret(s, p.tagPrefix)
 		if err != nil {
-			return false, errors.Wrapf(err, "Error while decoding acme certificate from secret for existing domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while decoding acme certificate from secret for existing domain %v", cert.Spec.Domain)
 		}
 
 		// Decode cert
 		pemBlock, _ := pem.Decode(acmeCert.Cert)
 		if pemBlock == nil {
-			return false, errors.Wrapf(err, "Got nil back when decoding x509 encoded certificate for existing domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Got nil back when decoding x509 encoded certificate for existing domain %v", cert.Spec.Domain)
 		}
 
 		parsedCert, err := x509.ParseCertificate(pemBlock.Bytes)
 		if err != nil {
-			return false, errors.Wrapf(err, "Error while parsing x509 encoded certificate for existing domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while parsing x509 encoded certificate for existing domain %v", cert.Spec.Domain)
 		}
 
 		// If certificate expires after now + p.renewBeforeDays, don't renew
@@ -388,7 +393,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	})
 
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while running bolt view transaction for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while running bolt view transaction for domain %v", cert.Spec.Domain)
 	}
 
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
@@ -397,13 +402,13 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	// Handle user information
 	if userInfoRaw != nil { // Use existing user
 		if err := json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
-			return false, errors.Wrapf(err, "Error while unmarshalling user info for %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while unmarshalling user info for %v", cert.Spec.Domain)
 		}
 
 		log.Printf("Creating ACME client for %v provider for %v", provider, cert.Spec.Domain)
 		acmeClient, acmeClientMutex, err = p.newACMEClient(&acmeUserInfo, provider)
 		if err != nil {
-			return false, errors.Wrapf(err, "Error while creating ACME client for %v provider for %v", provider, cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while creating ACME client for %v provider for %v", provider, cert.Spec.Domain)
 		}
 
 		// Some acme providers require locking, if the mutex is specified, lock it
@@ -414,7 +419,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	} else { // Generate a new ACME user
 		userKey, err := rsa.GenerateKey(rand.Reader, 2048)
 		if err != nil {
-			return false, errors.Wrapf(err, "Error while generating rsa key for new user for domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while generating rsa key for new user for domain %v", cert.Spec.Domain)
 		}
 
 		acmeUserInfo.Email = email
@@ -426,7 +431,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		log.Printf("Creating ACME client for %v provider for %v", provider, cert.Spec.Domain)
 		acmeClient, acmeClientMutex, err = p.newACMEClient(&acmeUserInfo, provider)
 		if err != nil {
-			return false, errors.Wrapf(err, "Error while creating ACME client for %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while creating ACME client for %v", cert.Spec.Domain)
 		}
 
 		// Some acme providers require locking, if the mutex is specified, lock it
@@ -438,12 +443,12 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		// Register
 		acmeUserInfo.Registration, err = acmeClient.Register()
 		if err != nil {
-			return false, errors.Wrapf(err, "Error while registering user for new domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while registering user for new domain %v", cert.Spec.Domain)
 		}
 
 		// Agree to TOS
 		if err := acmeClient.AgreeToTOS(); err != nil {
-			return false, errors.Wrapf(err, "Error while agreeing to acme TOS for new domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while agreeing to acme TOS for new domain %v", cert.Spec.Domain)
 		}
 	}
 
@@ -456,7 +461,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		certRes, errs := acmeClient.ObtainCertificate(domains, true, nil, false)
 		for _, domain := range domains {
 			if errs[domain] != nil {
-				return false, errors.Wrapf(errs[domain], "Error while obtaining certificate for new domain %v", domain)
+				return p.NoteCertError(cert, errs[domain], "Error while obtaining certificate for new domain %v", domain)
 			}
 		}
 
@@ -466,7 +471,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		acmeCertDetails = NewACMECertDetailsFromResource(certRes)
 	} else {
 		if err := json.Unmarshal(certDetailsRaw, &acmeCertDetails); err != nil {
-			return false, errors.Wrapf(err, "Error while unmarshalling cert details for existing domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while unmarshalling cert details for existing domain %v", cert.Spec.Domain)
 		}
 
 		// Fill in cert resource
@@ -476,7 +481,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 
 		certRes, err = acmeClient.RenewCertificate(certRes, true, false)
 		if err != nil {
-			return false, errors.Wrapf(err, "Error while renewing certificate for existing domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while renewing certificate for existing domain %v", cert.Spec.Domain)
 		}
 
 		// Fill in details
@@ -488,17 +493,17 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	// Serialize acmeCertDetails and acmeUserInfo
 	certDetailsRaw, err = json.Marshal(&acmeCertDetails)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while marshalling cert details for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while marshalling cert details for domain %v", cert.Spec.Domain)
 	}
 
 	userInfoRaw, err = json.Marshal(&acmeUserInfo)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while marshalling user info for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while marshalling user info for domain %v", cert.Spec.Domain)
 	}
 
 	altNamesRaw, err := json.Marshal(altNames)
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while marshalling altNames for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while marshalling altNames for domain %v", cert.Spec.Domain)
 	}
 
 	// Save cert details and user info to bolt
@@ -510,7 +515,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		return nil
 	})
 	if err != nil {
-		return false, errors.Wrapf(err, "Error while saving data to bolt for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while saving data to bolt for domain %v", cert.Spec.Domain)
 	}
 
 	// Convert cert data to k8s secret
@@ -525,7 +530,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 
 	// Save the k8s secret
 	if err := p.k8s.saveSecret(namespace, s, isUpdate); err != nil {
-		return false, errors.Wrapf(err, "Error while saving secret for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while saving secret for domain %v", cert.Spec.Domain)
 	}
 
 	msg := "Created certificate"
@@ -559,6 +564,21 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	})
 
 	return true, nil
+}
+
+
+func (p *CertProcessor) NoteCertError(cert Certificate, err error, format string, args ...interface{}) (bool, error) {
+	namespace   := certificateNamespace(cert)
+	wrapped_err := errors.Wrapf(err, format, args)
+	now, _ := time.Now().UTC().MarshalText()
+
+	p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
+		Provisioned: "false",
+		ErrorDate: string(now),
+		ErrorMsg: wrapped_err.Error(),
+	})
+
+	return false, wrapped_err
 }
 
 func (p *CertProcessor) gcSecrets() error {

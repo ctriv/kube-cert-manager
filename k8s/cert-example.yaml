@@ -3,7 +3,7 @@ kind: "Certificate"
 metadata:
   name: "cert-test-one"
 spec:
-  domain: "triv.org"
+  domain: "triv3.com"
   email: "creinhardt@liquidweb.com"
   provider: "http"
   secretName: cert-test-one-tls
