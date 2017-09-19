@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kube-cert-manager
+  namespace: kube-system
+  labels:
+    app: kube-cert-manager
+spec:
+  ports:
+  - name: http-challange
+    port: 5002
+  selector:
+    app: kube-cert-manager
+  clusterIP: None
