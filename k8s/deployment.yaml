@@ -16,7 +16,7 @@ spec:
       serviceAccountName: kube-cert-manager
       containers:
         - name: kube-cert-manager
-          image: ctriv/kube-cert-manager:build-2
+          image: ctriv/kube-cert-manager:build-4
           args:
             - "-data-dir=/var/lib/cert-manager"
             - "-acme-url=https://acme-staging.api.letsencrypt.org/directory"
