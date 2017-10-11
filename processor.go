@@ -384,10 +384,12 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		log.Printf("[%v] Expiry for cert is in less than %v days (%v), attempting renewal", cert.Spec.Domain, p.renewBeforeDays, parsedCert.NotAfter.String())
 	}
 
+	email := valueOrDefault(cert.Spec.Email, p.defaultEmail)
+
 	// Fetch acme user data and cert details from bolt
 	var userInfoRaw, certDetailsRaw []byte
 	err = p.db.View(func(tx *bolt.Tx) error {
-		userInfoRaw = tx.Bucket([]byte("user-info")).Get([]byte(cert.Spec.Domain))
+		userInfoRaw = tx.Bucket([]byte("user-info")).Get([]byte(email))
 		certDetailsRaw = tx.Bucket([]byte("cert-details")).Get([]byte(cert.Spec.Domain))
 		return nil
 	})
@@ -397,7 +399,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	}
 
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
-	email := valueOrDefault(cert.Spec.Email, p.defaultEmail)
+
 
 	// Handle user information
 	if userInfoRaw != nil { // Use existing user
@@ -405,7 +407,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 			return p.NoteCertError(cert, err, "Error while unmarshalling user info for %v", cert.Spec.Domain)
 		}
 
-		log.Printf("Creating ACME client for %v provider for %v", provider, cert.Spec.Domain)
+		log.Printf("Creating ACME client for existing account %v, domain %v, and provider %v", email, cert.Spec.Domain, provider)
 		acmeClient, acmeClientMutex, err = p.newACMEClient(&acmeUserInfo, provider)
 		if err != nil {
 			return p.NoteCertError(cert, err, "Error while creating ACME client for %v provider for %v", provider, cert.Spec.Domain)
@@ -428,7 +430,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 			Bytes: x509.MarshalPKCS1PrivateKey(userKey),
 		})
 
-		log.Printf("Creating ACME client for %v provider for %v", provider, cert.Spec.Domain)
+		log.Printf("Creating new ACME client for new account %v, domain %v, and provider %v", email, cert.Spec.Domain, provider)
 		acmeClient, acmeClientMutex, err = p.newACMEClient(&acmeUserInfo, provider)
 		if err != nil {
 			return p.NoteCertError(cert, err, "Error while creating ACME client for %v", cert.Spec.Domain)
@@ -449,6 +451,22 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		// Agree to TOS
 		if err := acmeClient.AgreeToTOS(); err != nil {
 			return p.NoteCertError(cert, err, "Error while agreeing to acme TOS for new domain %v", cert.Spec.Domain)
+		}
+
+		userInfoRaw, err = json.Marshal(&acmeUserInfo)
+		if err != nil {
+			return p.NoteCertError(cert, err, "Error while marshalling user info for domain %v", cert.Spec.Domain)
+		}
+
+		// Save user info to bolt
+		err = p.db.Update(func(tx *bolt.Tx) error {
+			key := []byte(email)
+			tx.Bucket([]byte("user-info")).Put(key, userInfoRaw)
+			return nil
+		})
+
+		if err != nil {
+			return p.NoteCertError(cert, err, "Error while saving user data to bolt for domain %v", cert.Spec.Domain)
 		}
 	}
 
@@ -496,20 +514,14 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		return p.NoteCertError(cert, err, "Error while marshalling cert details for domain %v", cert.Spec.Domain)
 	}
 
-	userInfoRaw, err = json.Marshal(&acmeUserInfo)
-	if err != nil {
-		return p.NoteCertError(cert, err, "Error while marshalling user info for domain %v", cert.Spec.Domain)
-	}
-
 	altNamesRaw, err := json.Marshal(altNames)
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while marshalling altNames for domain %v", cert.Spec.Domain)
 	}
 
-	// Save cert details and user info to bolt
+	// Save cert details to bolt
 	err = p.db.Update(func(tx *bolt.Tx) error {
 		key := []byte(cert.Spec.Domain)
-		tx.Bucket([]byte("user-info")).Put(key, userInfoRaw)
 		tx.Bucket([]byte("cert-details")).Put(key, certDetailsRaw)
 		tx.Bucket([]byte("domain-altnames")).Put(key, altNamesRaw)
 		return nil
