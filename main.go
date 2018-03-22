@@ -58,7 +58,6 @@ func main() {
 		kubeconfig       string
 		acmeURL          string
 		syncInterval     int
-		certSecretPrefix string
 		dataDir          string
 		certNamespace    string
 		tagPrefix        string
@@ -70,7 +69,6 @@ func main() {
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
 	flag.StringVar(&acmeURL, "acme-url", "", "The URL to the acme directory to use")
-	flag.StringVar(&certSecretPrefix, "cert-secret-prefix", "", "The prefix to use for certificate secrets")
 	flag.IntVar(&syncInterval, "sync-interval", 30, "Sync interval in seconds")
 	flag.StringVar(&dataDir, "data-dir", "/var/lib/cert-manager", "Data directory path")
 	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
@@ -159,7 +157,7 @@ func main() {
 	}
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays)
+	p := NewCertProcessor(k8sClient, certClient, acmeURL, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}
