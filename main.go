@@ -34,6 +34,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"liquidweb.com/kube-cert-manager/internal/k8s"
+	"liquidweb.com/kube-cert-manager/internal/processor"
+
 	"github.com/boltdb/bolt"
 )
 
@@ -62,7 +65,8 @@ func main() {
 		certNamespace    string
 		tagPrefix        string
 		namespaces       []string
-		defaultProvider  string
+		defaultChallange string
+		defaultCA        string
 		defaultEmail     string
 		renewBeforeDays  int
 	)
@@ -74,7 +78,8 @@ func main() {
 	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
 	flag.StringVar(&tagPrefix, "tag-prefix", "stable.liquidweb.com/kcm.", "Prefix added to labels and annotations")
 	flag.Var((*listFlag)(&namespaces), "namespaces", "Comma-separated list of namespaces to monitor. The empty list means all namespaces")
-	flag.StringVar(&defaultProvider, "default-provider", "", "Default handler to handle ACME challenges")
+	flag.StringVar(&defaultChallange, "default-challange", "http", "Default challange type.  Defaults to http.  Options: dns or http")
+	flag.StringVar(&defaultCA, "default-ca", "letsencrypt", "Default certificate authority.  Defaults to letsencrypt.  Options: letsencrypt or globalsign")
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
 	flag.Parse()
@@ -133,8 +138,8 @@ func main() {
 		func(scheme *runtime.Scheme) error {
 			scheme.AddKnownTypes(
 				groupVersion,
-				&Certificate{},
-				&CertificateList{},
+				&k8s.Certificate{},
+				&k8s.CertificateList{},
 				&api.ListOptions{},
 				&api.DeleteOptions{},
 			)
@@ -157,22 +162,22 @@ func main() {
 	}
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays)
+	p := processor.NewCertProcessor(k8sClient, certClient, acmeURL, certNamespace, tagPrefix, namespaces, defaultCA, defaultChallange, defaultEmail, db, renewBeforeDays)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}
 	doneChan := make(chan struct{})
 
-	if len(p.namespaces) == 0 {
+	if len(namespaces) == 0 {
 		wg.Add(1)
-		go p.watchKubernetesEvents(
+		go p.WatchKubernetesEvents(
 			v1.NamespaceAll,
 			&wg,
 			doneChan)
 	} else {
-		for _, namespace := range p.namespaces {
+		for _, namespace := range namespaces {
 			wg.Add(1)
-			go p.watchKubernetesEvents(
+			go p.WatchKubernetesEvents(
 				namespace,
 				&wg,
 				doneChan,
@@ -180,7 +185,7 @@ func main() {
 		}
 	}
 	wg.Add(1)
-	go p.maintenance(time.Second*time.Duration(syncInterval), &wg, doneChan)
+	go p.Maintenance(time.Second*time.Duration(syncInterval), &wg, doneChan)
 
 	log.Println("Kubernetes Certificate Controller started successfully.")
 

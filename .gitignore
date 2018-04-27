@@ -1,5 +1,5 @@
-kube-cert-manager
-kube-cert-manager.exe
+/kube-cert-manager
+/kube-cert-manager.exe
 vendor
 *~
 data
