@@ -19,7 +19,7 @@ import (
 	"liquidweb.com/kube-cert-manager/internal/k8s"
 )
 
-type AcmeCertAuthority struct {
+type certAuthority struct {
 	db       *bolt.DB
 	acmeURL  string
 	HTTPLock *sync.Mutex
@@ -31,8 +31,8 @@ type ACMEUserData struct {
 	Key          []byte                     `json:"key"`
 }
 
-func NewAcmeCertAuthority(db *bolt.DB, acmeURL string) *AcmeCertAuthority {
-	return &AcmeCertAuthority{
+func NewAcmeCertAuthority(db *bolt.DB, acmeURL string) *certAuthority {
+	return &certAuthority{
 		db:       db,
 		acmeURL:  acmeURL,
 		HTTPLock: &sync.Mutex{},
@@ -61,7 +61,7 @@ func (u ACMEUserData) GetPrivateKey() crypto.PrivateKey {
 	return privateKey
 }
 
-func (ca *AcmeCertAuthority) ProvisionCert(certreq *k8s.Certificate) (*cert.Bundle, error) {
+func (ca *certAuthority) ProvisionCert(certreq *k8s.Certificate) (*cert.Bundle, error) {
 	acmeClient, mutex, err := ca.init(certreq)
 
 	mutex.Lock()
@@ -96,7 +96,7 @@ func (ca *AcmeCertAuthority) ProvisionCert(certreq *k8s.Certificate) (*cert.Bund
 	return &ret, nil
 }
 
-func (ca *AcmeCertAuthority) RenewCert(certreq *k8s.Certificate, certDetails *cert.Bundle) (*cert.Bundle, error) {
+func (ca *certAuthority) RenewCert(certreq *k8s.Certificate, certDetails *cert.Bundle) (*cert.Bundle, error) {
 	acmeClient, mutex, err := ca.init(certreq)
 
 	mutex.Lock()
@@ -136,7 +136,7 @@ func (ca *AcmeCertAuthority) RenewCert(certreq *k8s.Certificate, certDetails *ce
 	return &ret, nil
 }
 
-func (ca *AcmeCertAuthority) init(certreq *k8s.Certificate) (*acme.Client, *sync.Mutex, error) {
+func (ca *certAuthority) init(certreq *k8s.Certificate) (*acme.Client, *sync.Mutex, error) {
 	email := certreq.Spec.Email
 	var (
 		userInfoRaw  []byte
@@ -164,7 +164,7 @@ func (ca *AcmeCertAuthority) init(certreq *k8s.Certificate) (*acme.Client, *sync
 	return ca.newACMEClient(acmeUserInfo, certreq.Spec.Challange)
 }
 
-func (ca *AcmeCertAuthority) CreateNewUser(certreq *k8s.Certificate, email string) (*acme.Client, *sync.Mutex, error) {
+func (ca *certAuthority) CreateNewUser(certreq *k8s.Certificate, email string) (*acme.Client, *sync.Mutex, error) {
 	userKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	var acmeUserInfo ACMEUserData
 
@@ -215,7 +215,7 @@ func (ca *AcmeCertAuthority) CreateNewUser(certreq *k8s.Certificate, email strin
 	return acmeClient, acmeClientMutex, nil
 }
 
-func (ca *AcmeCertAuthority) newACMEClient(acmeUser acme.User, challenge string) (*acme.Client, *sync.Mutex, error) {
+func (ca *certAuthority) newACMEClient(acmeUser acme.User, challenge string) (*acme.Client, *sync.Mutex, error) {
 	acmeClient, err := acme.NewClient(ca.acmeURL, acmeUser, acme.RSA2048)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Error while generating acme client")
