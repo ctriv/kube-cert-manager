@@ -192,7 +192,7 @@ func (ca *AcmeCertAuthority) CreateNewUser(certreq *k8s.Certificate, email strin
 	}
 
 	// Agree to TOS
-	if err := acmeClient.AgreeToTOS(); err != nil {
+	if err = acmeClient.AgreeToTOS(); err != nil {
 		return nil, nil, errors.Wrapf(err, "Error while agreeing to acme TOS for new domain %v", certreq.Spec.Domain)
 	}
 
