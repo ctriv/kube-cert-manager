@@ -15,15 +15,20 @@ import (
 	"liquidweb.com/kube-cert-manager/internal/util"
 )
 
+// Bundle is a representation of what we commmonly think of when we think of a
+// TLS cert.  It contains the cert and private key, along with metadata such as
+// the the domain name, alternate names, and any extra data the CA needs.
 type Bundle struct {
-	DomainName  string
-	AltNames    []string
-	Cert        []byte
-	PrivateKey  []byte
-	CAExtras    map[string]string
-	_ParsedCert *x509.Certificate `json:"-"`
+	DomainName string
+	AltNames   []string
+	Cert       []byte
+	PrivateKey []byte
+	CAExtras   map[string]string
+	parsedCert *x509.Certificate
 }
 
+// NewBundleFromSecret takes a kubernetes secret struct and returns a Bundle with
+// containing the same logical data.
 func NewBundleFromSecret(s *v1.Secret) (*Bundle, error) {
 	var ok bool
 	b := new(Bundle)
@@ -73,31 +78,46 @@ func (b *Bundle) ToSecret(name string, labels map[string]string) *v1.Secret {
 	}
 }
 
+// ParsedCert returns a x509 Certificate struct.  This is useful for pulling
+// metadata out the cert, such as the subject or expiration date.
 func (b *Bundle) ParsedCert() *x509.Certificate {
-	if b._ParsedCert != nil {
-		return b._ParsedCert
+	if b.parsedCert != nil {
+		return b.parsedCert
 	}
 
 	block, _ := pem.Decode(b.Cert)
 	cert, _ := x509.ParseCertificate(block.Bytes)
 
-	b._ParsedCert = cert
+	b.parsedCert = cert
 
 	return cert
 }
 
+// ExpiresDate returns the datetime that this cert will expire as a time.Time
 func (b *Bundle) ExpiresDate() time.Time {
 	return b.ParsedCert().NotAfter
 }
 
+// ExpiringWithin tells you if a cert is expiring before a certain numbers of
+// days.  Takes a day count as an int and returns a bool.
+//
+// For example, if you wanted to know if a cert is expiring within the next 30
+// days:
+//        if cert.ExpiringWithin(30) {
+//            Renew(Cert)
+//        }
 func (b *Bundle) ExpiringWithin(days int) bool {
 	return b.ExpiresDate().Before(time.Now().Add(time.Hour * time.Duration(24*days)))
 }
 
+// SatisfiesCert takes a k8s.Certificate struct and returns true if the cert
+// bundle conforms the specification in the k8s.Certificate struct. False otherwise.
 func (b *Bundle) SatisfiesCert(cert k8s.Certificate) bool {
 	return bytes.Equal(b.Checksum(), cert.Checksum())
 }
 
+// Checksum returns a byte slice containing a hash that represents the uniquely
+// identifying data within the bundle.
 func (b *Bundle) Checksum() []byte {
 	h := sha256.New()
 
