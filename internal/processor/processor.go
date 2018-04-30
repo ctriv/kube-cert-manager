@@ -26,11 +26,12 @@ import (
 	"k8s.io/client-go/rest"
 
 	"liquidweb.com/kube-cert-manager/internal/ca/acme"
+	"liquidweb.com/kube-cert-manager/internal/ca/globalsign"
 	"liquidweb.com/kube-cert-manager/internal/cert"
 	"liquidweb.com/kube-cert-manager/internal/k8s"
 )
 
-type CertificateAuthority interface {
+type certificateAuthority interface {
 	ProvisionCert(*k8s.Certificate) (*cert.Bundle, error)
 	RenewCert(*k8s.Certificate, *cert.Bundle) (*cert.Bundle, error)
 }
@@ -38,6 +39,7 @@ type CertificateAuthority interface {
 // CertProcessor holds the shared configuration, state, and locks
 type CertProcessor struct {
 	acmeURL          string
+	globalSignURL    string
 	certNamespace    string
 	tagPrefix        string
 	namespaces       []string
@@ -326,16 +328,16 @@ func (p *CertProcessor) getCertFromSecret(s *v1.Secret, certreq k8s.Certificate)
 
 func (p *CertProcessor) noteCertError(certreq k8s.Certificate, err error, format string, args ...interface{}) (bool, error) {
 	namespace := certreq.Metadata.Namespace
-	wrapped_err := errors.Wrapf(err, format, args)
+	wrappedErr := errors.Wrapf(err, format, args)
 	now, _ := time.Now().UTC().MarshalText()
 
 	p.kube.UpdateCertStatus(namespace, certreq.Metadata.Name, k8s.CertificateStatus{
 		Provisioned: "false",
 		ErrorDate:   string(now),
-		ErrorMsg:    wrapped_err.Error(),
+		ErrorMsg:    wrappedErr.Error(),
 	})
 
-	return false, wrapped_err
+	return false, wrappedErr
 }
 
 func (p *CertProcessor) gcSecrets() error {
@@ -370,13 +372,12 @@ func (p *CertProcessor) gcSecrets() error {
 	return nil
 }
 
-func (p *CertProcessor) caForCert(certreq k8s.Certificate) (CertificateAuthority, error) {
+func (p *CertProcessor) caForCert(certreq k8s.Certificate) (certificateAuthority, error) {
 	switch certreq.Spec.CA {
 	case "letsencrypt":
-		// TOMORROW - Get the http lock stuff figured out.  Create a new function for acme.
 		return acme.NewAcmeCertAuthority(p.db, p.acmeURL), nil
-	// case "globalsign":
-	// 	return GlobalSignCertAuthority{"db": p.db}, nil
+	case "globalsign":
+		return globalsign.NewGlobalsignCertAuthority(p.db, p.globalSignURL), nil
 	default:
 		return nil, fmt.Errorf("Unknown cert authority: %s", certreq.Spec.CA)
 	}
