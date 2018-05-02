@@ -105,3 +105,7 @@ func (c *Certificate) Checksum() []byte {
 
 	return h.Sum(nil)
 }
+
+func (c *Certificate) HasSANs() bool {
+	return len(c.Spec.AltNames) > 0
+}

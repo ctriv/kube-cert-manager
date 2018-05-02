@@ -216,7 +216,7 @@ func (ca *certAuthority) CreateNewUser(certreq *k8s.Certificate, email string) (
 }
 
 func (ca *certAuthority) newACMEClient(acmeUser acme.User, challenge string) (*acme.Client, *sync.Mutex, error) {
-	acmeClient, err := acme.NewClient(ca.acmeURL, acmeUser, acme.RSA2048)
+	acmeClient, err := acme.NewClient(ca.acmeURL, acmeUser, acme.RSA4096)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Error while generating acme client")
 	}

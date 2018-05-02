@@ -1,0 +1,1515 @@
+<?xml version='1.0' encoding='UTF-8'?><wsdl:definitions name="ServerSSLService" targetNamespace="https://system.globalsign.com/kb/ws/v1/" xmlns:ns1="http://cxf.apache.org/bindings/xformat" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="https://system.globalsign.com/kb/ws/v1/" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <wsdl:types>
+<xs:schema elementFormDefault="unqualified" targetNamespace="https://system.globalsign.com/kb/ws/v1/" version="1.0" xmlns:ns1="https://system.globalsign.com/kb/ws/" xmlns:tns="https://system.globalsign.com/kb/ws/v1/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:import namespace="https://system.globalsign.com/kb/ws/" />
+<xs:element name="BusinessEVInfo" type="tns:BusinessEVInfo" />
+<xs:element name="CertInviteOrder" type="tns:CertInviteOrder" />
+<xs:element name="CertInviteOrderResponse" type="tns:CertInviteOrderResponse" />
+<xs:element name="ChangeApproverEmail" type="tns:ChangeApproverEmail" />
+<xs:element name="ChangeApproverEmailResponse" type="tns:ChangeApproverEmailResponse" />
+<xs:element name="ChangeSubjectAltName" type="tns:ChangeSubjectAltName" />
+<xs:element name="ChangeSubjectAltNameResponse" type="tns:ChangeSubjectAltNameResponse" />
+<xs:element name="DVDNSOrder" type="tns:DVDNSOrder" />
+<xs:element name="DVDNSOrderResponse" type="tns:DVDNSOrderResponse" />
+<xs:element name="DVDNSOrderWithoutCsr" type="tns:DVDNSOrderWithoutCsr" />
+<xs:element name="DVDNSOrderWithoutCsrResponse" type="tns:DVDNSOrderWithoutCsrResponse" />
+<xs:element name="DVDNSVerificationForIssue" type="tns:DVDNSVerificationForIssue" />
+<xs:element name="DVDNSVerificationForIssueResponse" type="tns:DVDNSVerificationForIssueResponse" />
+<xs:element name="DVOrder" type="tns:DVOrder" />
+<xs:element name="DVOrderResponse" type="tns:DVOrderResponse" />
+<xs:element name="DVOrderWithoutCSR" type="tns:DVOrderWithoutCSR" />
+<xs:element name="DVOrderWithoutCSRResponse" type="tns:DVOrderWithoutCSRResponse" />
+<xs:element name="EVOrder" type="tns:EVOrder" />
+<xs:element name="EVOrderJP" type="tns:EVOrderJP" />
+<xs:element name="EVOrderJPResponse" type="tns:EVOrderJPResponse" />
+<xs:element name="EVOrderResponse" type="tns:EVOrderResponse" />
+<xs:element name="GetApproverList" type="tns:GetApproverList" />
+<xs:element name="GetApproverListResponse" type="tns:GetApproverListResponse" />
+<xs:element name="GetDVApproverList" type="tns:GetDVApproverList" />
+<xs:element name="GetDVApproverListResponse" type="tns:GetDVApproverListResponse" />
+<xs:element name="ModifyOrder" type="tns:ModifyOrder" />
+<xs:element name="ModifyOrderResponse" type="tns:ModifyOrderResponse" />
+<xs:element name="OVOrder" type="tns:OVOrder" />
+<xs:element name="OVOrderJP" type="tns:OVOrderJP" />
+<xs:element name="OVOrderJPResponse" type="tns:OVOrderJPResponse" />
+<xs:element name="OVOrderJPWithoutCSR" type="tns:OVOrderJPWithoutCSR" />
+<xs:element name="OVOrderJPWithoutCSRResponse" type="tns:OVOrderJPWithoutCSRResponse" />
+<xs:element name="OVOrderResponse" type="tns:OVOrderResponse" />
+<xs:element name="OVOrderWithoutCSR" type="tns:OVOrderWithoutCSR" />
+<xs:element name="OVOrderWithoutCSRResponse" type="tns:OVOrderWithoutCSRResponse" />
+<xs:element name="QbOVOrder" type="tns:QbV1OVOrderResponse" />
+<xs:element name="QbV1DnsVerificationForIssueRequest" type="tns:QbV1DnsVerificationForIssueRequest" />
+<xs:element name="QbV1DvDnsOrderRequest" type="tns:QbV1DvDnsOrderRequest" />
+<xs:element name="QbV1DvDnsOrderResponse" type="tns:QbV1DvDnsOrderResponse" />
+<xs:element name="QbV1DvOrderRequest" type="tns:QbV1DvOrderRequest" />
+<xs:element name="QbV1DvOrderResponse" type="tns:QbV1DvOrderResponse" />
+<xs:element name="QbV1EVOrderJPRequest" type="tns:QbV1EVOrderJPRequest" />
+<xs:element name="QbV1EVOrderRequest" type="tns:QbV1EVOrderRequest" />
+<xs:element name="QbV1OVOrderJPRequest" type="tns:QbV1OVOrderJPRequest" />
+<xs:element name="QbV1OVOrderRequest" type="tns:QbV1OVOrderRequest" />
+<xs:element name="QbV1UrlVerificationForIssueRequest" type="tns:QbV1UrlVerificationForIssueRequest" />
+<xs:element name="QbV1UrlVerificationRequest" type="tns:QbV1UrlVerificationRequest" />
+<xs:element name="QbV1UrlVerificationResponse" type="tns:QbV1UrlVerificationResponse" />
+<xs:element name="ResendEmail" type="tns:ResendEmail" />
+<xs:element name="ResendEmailResponse" type="tns:ResendEmailResponse" />
+<xs:element name="URLVerification" type="tns:URLVerification" />
+<xs:element name="URLVerificationForIssue" type="tns:URLVerificationForIssue" />
+<xs:element name="URLVerificationForIssueResponse" type="tns:URLVerificationForIssueResponse" />
+<xs:element name="URLVerificationResponse" type="tns:URLVerificationResponse" />
+<xs:element name="URLVerificationWithoutCSR" type="tns:URLVerificationWithoutCSR" />
+<xs:element name="URLVerificationWithoutCSRResponse" type="tns:URLVerificationWithoutCSRResponse" />
+<xs:element name="qbV1CertInviteOrderRequest" type="tns:QbV1CertInviteOrderRequest" />
+<xs:element name="qbV1CertInviteOrderResponse" type="tns:QbV1CertInviteOrderResponse" />
+<xs:element name="qbV1ChangeApproverEmailsRequest" type="ns1:QbV1ChangeApproverEmailsRequest" />
+<xs:element name="qbV1ChangeApproverEmailsResponse" type="ns1:QbV1ChangeApproverEmailsResponse" />
+<xs:element name="qbV1ChangeSubjectAltNameRequest" type="tns:QbV1ChangeSubjectAltNameRequest" />
+<xs:element name="qbV1ChangeSubjectAltNameResponse" type="tns:QbV1ChangeSubjectAltNameResponse" />
+<xs:element name="qbV1DnsVerificationForIssueResponse" type="tns:QbV1DnsVerificationForIssueResponse" />
+<xs:element name="qbV1DvDnsOrderWithoutCsrRequest" type="tns:QbV1DvDnsOrderWithoutCsrRequest" />
+<xs:element name="qbV1DvDnsOrderWithoutCsrResponse" type="tns:QbV1DvDnsOrderWithoutCsrResponse" />
+<xs:element name="qbV1DvOrderWithoutCsrRequest" type="tns:QbV1DvOrderWithoutCsrRequest" />
+<xs:element name="qbV1DvOrderWithoutCsrResponse" type="tns:QbV1DvOrderWithoutCsrResponse" />
+<xs:element name="qbV1EVOrderResponse" type="tns:QbV1EVOrderResponse" />
+<xs:element name="qbV1GetApproverListRequest" type="tns:QbV1GetApproverListRequest" />
+<xs:element name="qbV1GetApproverListResponse" type="tns:QbV1GetApproverListResponse" />
+<xs:element name="qbV1GetDVApproverListRequest" type="ns1:QbV1GetDVApproverListRequest" />
+<xs:element name="qbV1GetDVApproverListResponse" type="ns1:QbV1GetDVApproverListResponse" />
+<xs:element name="qbV1ModifyOrderRequest" type="tns:QbV1ModifyOrderRequest" />
+<xs:element name="qbV1ModifyOrderResponse" type="tns:QbV1ModifyOrderResponse" />
+<xs:element name="qbV1OVOrderJPWithoutCSRRequest" type="tns:QbV1OVOrderJPWithoutCSRRequest" />
+<xs:element name="qbV1OVOrderWithoutCSRRequest" type="tns:QbV1OVOrderWithoutCSRRequest" />
+<xs:element name="qbV1OVOrderWithoutCSRResponse" type="tns:QbV1OVOrderWithoutCSRResponse" />
+<xs:element name="qbV1ResendEmailRequest" type="tns:QbV1ResendEmailRequest" />
+<xs:element name="qbV1ResendEmailResponse" type="tns:QbV1ResendEmailResponse" />
+<xs:element name="qbV1UrlVerificationForIssueResponse" type="tns:QbV1UrlVerificationForIssueResponse" />
+<xs:element name="qbV1UrlVerificationWithoutCsrRequest" type="tns:QbV1UrlVerificationWithoutCsrRequest" />
+<xs:element name="qbV1UrlVerificationWithoutCsrResponse" type="tns:QbV1UrlVerificationWithoutCsrResponse" />
+<xs:complexType name="DVOrderWithoutCSR">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1DvOrderWithoutCsrRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvOrderWithoutCsrRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameterWithoutCSR" type="ns1:OrderRequestParameterWithoutCSR" />
+<xs:element name="OrderID" type="xs:string" />
+<xs:element minOccurs="0" name="SubID" nillable="true" type="xs:string" />
+<xs:element name="FQDN" type="xs:string" />
+<xs:element name="DVCSRInfo" type="tns:DVCSRInfo" />
+<xs:element name="ApproverEmail" type="xs:string" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrderRequestHeader">
+<xs:sequence>
+<xs:element minOccurs="0" name="AuthToken" type="tns:AuthToken" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="AuthToken">
+<xs:sequence>
+<xs:element minOccurs="0" name="UserName" type="xs:string" />
+<xs:element minOccurs="0" name="Password" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrderRequestParameter">
+<xs:sequence>
+<xs:element name="ProductCode" type="xs:string" />
+<xs:element minOccurs="0" name="BaseOption" nillable="true" type="xs:string" />
+<xs:element name="OrderKind" type="xs:string" />
+<xs:element name="Licenses" type="xs:string" />
+<xs:element minOccurs="0" name="Options" nillable="true" type="tns:Options" />
+<xs:element name="ValidityPeriod" type="tns:ValidityPeriod" />
+<xs:element name="CSR" type="xs:string" />
+<xs:element minOccurs="0" name="RenewalTargetOrderID" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="TargetCERT" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="SpecialInstructions" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="Coupon" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="Campaign" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Options">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="Option" nillable="true" type="tns:Option" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Option">
+<xs:sequence>
+<xs:element name="OptionName" type="xs:string" />
+<xs:element name="OptionValue" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ValidityPeriod">
+<xs:sequence>
+<xs:element name="Months" type="xs:string" />
+<xs:element minOccurs="0" name="NotBefore" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="NotAfter" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVCSRInfo">
+<xs:sequence>
+<xs:element name="Country" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ContactInfo">
+<xs:sequence>
+<xs:element name="FirstName" type="xs:string" />
+<xs:element name="LastName" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="SecondContactInfo">
+<xs:sequence>
+<xs:element name="FirstName" type="xs:string" />
+<xs:element name="LastName" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="SANEntries">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="SANEntry" nillable="true" type="tns:SANEntry" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="SANEntry">
+<xs:sequence>
+<xs:element name="SANOptionType" type="xs:string" />
+<xs:element name="SubjectAltName" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVOrderWithoutCSRResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1DvOrderWithoutCsrResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvOrderWithoutCsrResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrderResponseHeader">
+<xs:sequence>
+<xs:element name="SuccessCode" type="xs:int" />
+<xs:element minOccurs="0" name="Errors" type="tns:Errors" />
+<xs:element minOccurs="0" name="Timestamp" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Errors">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="Error" type="tns:Error" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Error">
+<xs:sequence>
+<xs:element minOccurs="0" name="ErrorCode" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="ErrorField" type="xs:string" />
+<xs:element minOccurs="0" name="ErrorMessage" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ModifyOrder">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1ModifyOrderRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ModifyOrderRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderID" type="xs:string" />
+<xs:element name="ModifyOrderOperation" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ModifyOrderResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1ModifyOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ModifyOrderResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="EVOrder">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1EVOrderRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1EVOrderRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:OrderRequestParameter" />
+<xs:element minOccurs="0" name="SubId" nillable="true" type="xs:string" />
+<xs:element name="OrganizationInfoEV" type="tns:OrganizationInfoEV" />
+<xs:element name="RequestorInfo" type="tns:RequestorApproverInfo" />
+<xs:element name="ApproverInfo" type="tns:RequestorApproverInfo" />
+<xs:element name="AuthorizedSignerInfo" type="tns:AuthorizedSignerInfo" />
+<xs:element name="JurisdictionInfo" type="tns:JurisdictionInfo" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrganizationInfoEV">
+<xs:complexContent>
+<xs:extension base="tns:BusinessEVInfo">
+<xs:sequence>
+<xs:element name="BusinessCategoryCode" type="xs:string" />
+<xs:element name="OrganizationAddress" type="tns:OrganizationAddressInfo" />
+</xs:sequence>
+</xs:extension>
+</xs:complexContent>
+</xs:complexType>
+<xs:complexType name="BusinessEVInfo">
+<xs:sequence>
+<xs:element minOccurs="0" name="BusinessAssumedName" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="CreditAgency" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="OrganizationCode" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrganizationAddressInfo">
+<xs:sequence>
+<xs:element name="AddressLine1" type="xs:string" />
+<xs:element minOccurs="0" name="AddressLine2" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="AddressLine3" nillable="true" type="xs:string" />
+<xs:element name="City" type="xs:string" />
+<xs:element name="Region" type="xs:string" />
+<xs:element minOccurs="0" name="PostalCode" nillable="true" type="xs:string" />
+<xs:element name="Country" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element minOccurs="0" name="Fax" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="RequestorApproverInfo">
+<xs:sequence>
+<xs:element name="FirstName" type="xs:string" />
+<xs:element name="LastName" type="xs:string" />
+<xs:element name="Function" type="xs:string" />
+<xs:element name="OrganizationName" type="xs:string" />
+<xs:element name="OrganizationUnit" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="AuthorizedSignerInfo">
+<xs:sequence>
+<xs:element name="OrganizationName" type="xs:string" />
+<xs:element name="FirstName" type="xs:string" />
+<xs:element name="LastName" type="xs:string" />
+<xs:element name="Function" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="JurisdictionInfo">
+<xs:sequence>
+<xs:element name="JurisdictionCountry" type="xs:string" />
+<xs:element minOccurs="0" name="JurisdictionState" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="JurisdictionLocality" nillable="true" type="xs:string" />
+<xs:element name="IncorporationAgencyRegistrationNumber" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="EVOrderResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1EVOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1EVOrderResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderId" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="URLVerificationForIssue">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1UrlVerificationForIssueRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1UrlVerificationForIssueRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="ApproverURL" type="xs:string" />
+<xs:element name="OrderID" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="URLVerificationForIssueResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1UrlVerificationForIssueResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1UrlVerificationForIssueResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="URLVerificationForIssue" nillable="true" type="tns:UrlVerificationForIssueObject" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="UrlVerificationForIssueObject">
+<xs:sequence>
+<xs:element minOccurs="0" name="CertificateInfo" nillable="true" type="tns:CertificateInfo" />
+<xs:element minOccurs="0" name="Fulfillment" nillable="true" type="tns:Fulfillment" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="CertificateInfo">
+<xs:sequence>
+<xs:element name="CertificateStatus" type="xs:string" />
+<xs:element name="StartDate" type="xs:string" />
+<xs:element name="EndDate" type="xs:string" />
+<xs:element name="CommonName" type="xs:string" />
+<xs:element name="SerialNumber" type="xs:string" />
+<xs:element name="SubjectName" type="xs:string" />
+<xs:element minOccurs="0" name="DNSNames" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Fulfillment">
+<xs:sequence>
+<xs:element minOccurs="0" name="CACertificates" nillable="true" type="tns:CACertificates" />
+<xs:element minOccurs="0" name="ServerCertificate" nillable="true" type="tns:ServerCertificate" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="CACertificates">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="CACertificate" nillable="true" type="tns:CACertificate" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="CACertificate">
+<xs:sequence>
+<xs:element name="CACertType" type="xs:string" />
+<xs:element name="CACert" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ServerCertificate">
+<xs:sequence>
+<xs:element name="X509Cert" type="xs:string" />
+<xs:element name="PKCS7Cert" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="GetApproverList">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1GetApproverListRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1GetApproverListRequest">
+<xs:sequence>
+<xs:element minOccurs="0" name="QueryRequestHeader" type="tns:QueryRequestHeader" />
+<xs:element minOccurs="0" name="FQDN" type="xs:string" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QueryRequestHeader">
+<xs:sequence>
+<xs:element minOccurs="0" name="AuthToken" type="tns:AuthToken" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="GetApproverListResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1GetApproverListResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1GetApproverListResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="QueryResponseHeader" type="tns:QueryResponseHeader" />
+<xs:element minOccurs="0" name="Approvers" nillable="true" type="tns:Approvers" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QueryResponseHeader">
+<xs:sequence>
+<xs:element name="SuccessCode" type="xs:int" />
+<xs:element minOccurs="0" name="Errors" type="tns:Errors" />
+<xs:element minOccurs="0" name="Timestamp" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Approvers">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" name="SearchOrderDetail" type="tns:Approver" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Approver">
+<xs:sequence>
+<xs:element name="ApproverType" type="xs:string" />
+<xs:element name="ApproverEmail" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="EVOrderJP">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1EVOrderJPRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1EVOrderJPRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:OrderRequestParameter" />
+<xs:element minOccurs="0" name="SubId" nillable="true" type="xs:string" />
+<xs:element name="OrganizationInfoEV" type="tns:OrganizationInfoEVNative" />
+<xs:element name="RequestorInfo" type="tns:RequestorApproverInfoNative" />
+<xs:element name="ApproverInfo" type="tns:RequestorApproverInfoNative" />
+<xs:element name="AuthorizedSignerInfo" type="tns:AuthorizedSignerInfoNative" />
+<xs:element name="JurisdictionInfo" type="tns:JurisdictionInfo" />
+<xs:element name="ContactInfo" type="tns:ContactInfoNative" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfoNative" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrganizationInfoEVNative">
+<xs:complexContent>
+<xs:extension base="tns:BusinessEVInfo">
+<xs:sequence>
+<xs:element name="OrganizationNameNative" type="xs:string" />
+<xs:element name="BusinessCategoryCode" type="xs:string" />
+<xs:element name="OrganizationAddress" type="tns:OrganizationAddressInfoNative" />
+</xs:sequence>
+</xs:extension>
+</xs:complexContent>
+</xs:complexType>
+<xs:complexType name="OrganizationAddressInfoNative">
+<xs:sequence>
+<xs:element name="AddressLine1" type="xs:string" />
+<xs:element name="AddressLine1Native" type="xs:string" />
+<xs:element minOccurs="0" name="AddressLine2" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="AddressLine2Native" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="AddressLine3" nillable="true" type="xs:string" />
+<xs:element name="City" type="xs:string" />
+<xs:element name="CityNative" type="xs:string" />
+<xs:element name="Region" type="xs:string" />
+<xs:element name="RegionNative" type="xs:string" />
+<xs:element minOccurs="0" name="PostalCode" nillable="true" type="xs:string" />
+<xs:element name="Country" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element minOccurs="0" name="Fax" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="RequestorApproverInfoNative">
+<xs:sequence>
+<xs:element name="FirstName" type="xs:string" />
+<xs:element name="FirstNameNative" type="xs:string" />
+<xs:element name="LastName" type="xs:string" />
+<xs:element name="LastNameNative" type="xs:string" />
+<xs:element name="Function" type="xs:string" />
+<xs:element name="OrganizationName" type="xs:string" />
+<xs:element name="OrganizationNameNative" type="xs:string" />
+<xs:element name="OrganizationUnitNative" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="AuthorizedSignerInfoNative">
+<xs:sequence>
+<xs:element name="OrganizationName" type="xs:string" />
+<xs:element name="OrganizationNameNative" type="xs:string" />
+<xs:element name="FirstName" type="xs:string" />
+<xs:element name="FirstNameNative" type="xs:string" />
+<xs:element name="LastName" type="xs:string" />
+<xs:element name="LastNameNative" type="xs:string" />
+<xs:element name="Function" type="xs:string" />
+<xs:element name="OrganizationUnitNative" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ContactInfoNative">
+<xs:sequence>
+<xs:element name="FirstName" type="xs:string" />
+<xs:element name="FirstNameNative" type="xs:string" />
+<xs:element name="LastName" type="xs:string" />
+<xs:element name="LastNameNative" type="xs:string" />
+<xs:element name="OrganizationNameNative" type="xs:string" />
+<xs:element minOccurs="0" name="OrganizationUnitNative" nillable="true" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="SecondContactInfoNative">
+<xs:sequence>
+<xs:element name="FirstNameNative" type="xs:string" />
+<xs:element name="LastNameNative" type="xs:string" />
+<xs:element name="Email" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="EVOrderJPResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1EVOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVDNSVerificationForIssue">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1DnsVerificationForIssueRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DnsVerificationForIssueRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="ApproverFQDN" type="xs:string" />
+<xs:element name="OrderID" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVDNSVerificationForIssueResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1DnsVerificationForIssueResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DnsVerificationForIssueResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="URLVerificationForIssue" nillable="true" type="tns:UrlVerificationForIssueObject" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVDNSOrderWithoutCsr">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1DvDnsOrderWithoutCsrRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvDnsOrderWithoutCsrRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameterWithoutCSR" type="ns1:OrderRequestParameterWithoutCSR" />
+<xs:element minOccurs="0" name="SubID" nillable="true" type="xs:string" />
+<xs:element name="FQDN" type="xs:string" />
+<xs:element name="DVCSRInfo" type="tns:DVCSRInfo" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVDNSOrderWithoutCsrResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1DvDnsOrderWithoutCsrResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvDnsOrderWithoutCsrResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="DNSTXT" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="VerificationFQDNList" nillable="true" type="tns:VerificationFQDNList" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="VerificationFQDNList">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="VerificationFQDN" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="GetDVApproverList">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="ns1:QbV1GetDVApproverListRequest" />
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="GetDVApproverListResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="ns1:QbV1GetDVApproverListResponse" />
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="CertInviteOrder">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1CertInviteOrderRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1CertInviteOrderRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:CertInviteOrderRequestParameter" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:CertInviteSANEntries" />
+<xs:element name="CertInviteExpirationDate" type="xs:string" />
+<xs:element name="RecipientDeliveryOption" type="xs:string" />
+<xs:element name="CertInviteRecipientEmail" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="CertInviteOrderRequestParameter">
+<xs:sequence>
+<xs:element name="ProductCode" type="xs:string" />
+<xs:element minOccurs="0" name="BaseOption" nillable="true" type="xs:string" />
+<xs:element name="OrderKind" type="xs:string" />
+<xs:element minOccurs="0" name="Options" nillable="true" type="tns:Options" />
+<xs:element name="ValidityPeriod" type="tns:ValidityPeriod" />
+<xs:element minOccurs="0" name="RenewalTargetOrderID" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="Coupon" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="Campaign" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="CertInviteSANEntries">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="SANEntry" nillable="true" type="tns:CertInviteSANEntry" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="CertInviteSANEntry">
+<xs:sequence>
+<xs:element name="SANOptionType" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="CertInviteOrderResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1CertInviteOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1CertInviteOrderResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element name="PIN" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ResendEmail">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1ResendEmailRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ResendEmailRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderID" type="xs:string" />
+<xs:element name="ResendEmailType" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ResendEmailResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1ResendEmailResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ResendEmailResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderId" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVOrderWithoutCSR">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1OVOrderWithoutCSRRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1OVOrderWithoutCSRRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameterWithoutCSR" type="ns1:OrderRequestParameterWithoutCSR" />
+<xs:element name="OrganizationInfo" type="tns:OrganizationInfo" />
+<xs:element name="SubID" type="xs:string" />
+<xs:element name="OVCSRInfo" type="tns:OVCSRInfo" />
+<xs:element name="FQDN" type="xs:string" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element name="SANEntries" type="tns:SANEntries" />
+<xs:element minOccurs="0" name="Extensions" nillable="true" type="tns:Extensions" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrganizationInfo">
+<xs:sequence>
+<xs:element name="OrganizationName" type="xs:string" />
+<xs:element minOccurs="0" name="CreditAgency" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="OrganizationCode" nillable="true" type="xs:string" />
+<xs:element name="OrganizationAddress" type="tns:OrganizationAddress" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OrganizationAddress">
+<xs:sequence>
+<xs:element minOccurs="0" name="AddressLine1" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="AddressLine2" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="AddressLine3" nillable="true" type="xs:string" />
+<xs:element name="City" type="xs:string" />
+<xs:element name="Region" type="xs:string" />
+<xs:element name="PostalCode" type="xs:string" />
+<xs:element name="Country" type="xs:string" />
+<xs:element name="Phone" type="xs:string" />
+<xs:element minOccurs="0" name="Fax" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVCSRInfo">
+<xs:sequence>
+<xs:element name="OrganizationName" type="xs:string" />
+<xs:element minOccurs="0" name="OrganizationUnit" nillable="true" type="xs:string" />
+<xs:element name="Locality" type="xs:string" />
+<xs:element name="StateOrProvince" type="xs:string" />
+<xs:element name="Country" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Extensions">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="Extension" nillable="true" type="tns:Extension" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="Extension">
+<xs:sequence>
+<xs:element name="Name" type="xs:string" />
+<xs:element name="Value" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVOrderWithoutCSRResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1OVOrderWithoutCSRResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1OVOrderWithoutCSRResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVOrder">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1DvOrderRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvOrderRequest">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:OrderRequestParameter" />
+<xs:element minOccurs="0" name="SubID" nillable="true" type="xs:string" />
+<xs:element name="OrderID" type="xs:string" />
+<xs:element name="ApproverEmail" type="xs:string" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVOrderResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1DvOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvOrderResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="URLVerification">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1UrlVerificationRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1UrlVerificationRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:OrderRequestParameter" />
+<xs:element minOccurs="0" name="SubID" nillable="true" type="xs:string" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="URLVerificationResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1UrlVerificationResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1UrlVerificationResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="MetaTag" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="VerificationURLList" nillable="true" type="tns:VerificationUrlList" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="VerificationUrlList">
+<xs:sequence>
+<xs:element maxOccurs="unbounded" minOccurs="0" name="VerificationURL" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVOrderJPWithoutCSR">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1OVOrderJPWithoutCSRRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1OVOrderJPWithoutCSRRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameterWithoutCSR" type="ns1:OrderRequestParameterWithoutCSR" />
+<xs:element name="OrganizationInfo" type="tns:OrganizationInfo" />
+<xs:element name="SubID" type="xs:string" />
+<xs:element name="OVCSRInfo" type="tns:OVCSRInfo" />
+<xs:element name="FQDN" type="xs:string" />
+<xs:element name="ContactInfo" type="tns:ContactInfoNative" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfoNative" />
+<xs:element name="SANEntries" type="tns:SANEntries" />
+<xs:element minOccurs="0" name="Extensions" nillable="true" type="tns:Extensions" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVOrderJPWithoutCSRResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1OVOrderWithoutCSRResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVDNSOrder">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1DvDnsOrderRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvDnsOrderRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:OrderRequestParameter" />
+<xs:element minOccurs="0" name="SubID" nillable="true" type="xs:string" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="DVDNSOrderResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1DvDnsOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1DvDnsOrderResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="DNSTXT" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="VerificationFQDNList" nillable="true" type="tns:VerificationFQDNList" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ChangeSubjectAltName">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1ChangeSubjectAltNameRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ChangeSubjectAltNameRequest">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="TargetOrderID" type="xs:string" />
+<xs:element minOccurs="0" name="ApproverEmail" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+<xs:element minOccurs="0" name="PIN" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ChangeSubjectAltNameResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1ChangeSubjectAltNameResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ChangeSubjectAltNameResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderResponseHeader" nillable="true" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" type="xs:string" />
+<xs:element minOccurs="0" name="TargetOrderID" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="ChangeApproverEmail">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="ns1:QbV1ChangeApproverEmailsRequest" />
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="ChangeApproverEmailResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="ns1:QbV1ChangeApproverEmailsResponse" />
+</xs:sequence>
+</xs:complexType>
+
+<xs:complexType name="OVOrderJP">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1OVOrderJPRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1OVOrderJPRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:OrderRequestParameter" />
+<xs:element name="SubID" type="xs:string" />
+<xs:element name="OrganizationInfo" type="tns:OrganizationInfo" />
+<xs:element name="ContactInfo" type="tns:ContactInfoNative" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfoNative" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+<xs:element minOccurs="0" name="Extensions" nillable="true" type="tns:Extensions" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVOrderJPResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1OVOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1OVOrderResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="URLVerificationWithoutCSR">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1UrlVerificationWithoutCsrRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1UrlVerificationWithoutCsrRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameterWithoutCSR" type="ns1:OrderRequestParameterWithoutCSR" />
+<xs:element minOccurs="0" name="SubID" nillable="true" type="xs:string" />
+<xs:element name="FQDN" type="xs:string" />
+<xs:element name="DVCSRInfo" type="tns:DVCSRInfo" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="URLVerificationWithoutCSRResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1UrlVerificationWithoutCsrResponse" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1UrlVerificationWithoutCsrResponse">
+<xs:sequence>
+<xs:element name="OrderResponseHeader" type="tns:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="MetaTag" nillable="true" type="xs:string" />
+<xs:element minOccurs="0" name="VerificationURLList" nillable="true" type="tns:VerificationUrlList" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVOrder">
+<xs:sequence>
+<xs:element minOccurs="0" name="Request" type="tns:QbV1OVOrderRequest" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1OVOrderRequest">
+<xs:sequence>
+<xs:element name="OrderRequestHeader" type="tns:OrderRequestHeader" />
+<xs:element name="OrderRequestParameter" type="tns:OrderRequestParameter" />
+<xs:element name="SubID" type="xs:string" />
+<xs:element name="OrganizationInfo" type="tns:OrganizationInfo" />
+<xs:element name="ContactInfo" type="tns:ContactInfo" />
+<xs:element minOccurs="0" name="SecondContactInfo" nillable="true" type="tns:SecondContactInfo" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="tns:SANEntries" />
+<xs:element minOccurs="0" name="Extensions" nillable="true" type="tns:Extensions" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="OVOrderResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="Response" type="tns:QbV1OVOrderResponse" />
+</xs:sequence>
+</xs:complexType>
+</xs:schema>
+<xs:schema targetNamespace="https://system.globalsign.com/kb/ws/" version="1.0" xmlns:ns1="https://system.globalsign.com/kb/ws/v1/" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:import namespace="https://system.globalsign.com/kb/ws/v1/" />
+<xs:complexType name="OrderRequestParameterWithoutCSR">
+<xs:complexContent>
+<xs:extension base="ns1:OrderRequestParameter">
+<xs:sequence>
+<xs:element name="Pin" type="xs:string" />
+<xs:element name="KeyLength" type="xs:string" />
+</xs:sequence>
+</xs:extension>
+</xs:complexContent>
+</xs:complexType>
+<xs:complexType name="QbV1GetDVApproverListRequest">
+<xs:sequence>
+<xs:element minOccurs="0" name="QueryRequestHeader" type="ns1:QueryRequestHeader" />
+<xs:element minOccurs="0" name="FQDN" type="xs:string" />
+<xs:element minOccurs="0" name="OrderID" type="xs:string" />
+<xs:element minOccurs="0" name="SANEntries" nillable="true" type="ns1:SANEntries" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1GetDVApproverListResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="QueryResponseHeader" type="ns1:QueryResponseHeader" />
+<xs:element minOccurs="0" name="Approvers" nillable="true" type="ns1:Approvers" />
+<xs:element minOccurs="0" name="OrderID" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ChangeApproverEmailsRequest">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderRequestHeader" type="ns1:OrderRequestHeader" />
+<xs:element minOccurs="0" name="OrderID" type="xs:string" />
+<xs:element minOccurs="0" name="ApproverEmail" type="xs:string" />
+<xs:element minOccurs="0" name="FQDN" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+<xs:complexType name="QbV1ChangeApproverEmailsResponse">
+<xs:sequence>
+<xs:element minOccurs="0" name="OrderResponseHeader" type="ns1:OrderResponseHeader" />
+<xs:element minOccurs="0" name="OrderID" type="xs:string" />
+</xs:sequence>
+</xs:complexType>
+</xs:schema>
+  </wsdl:types>
+  <wsdl:message name="OVOrderResponse">
+    <wsdl:part element="tns:OVOrderResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="URLVerificationResponse">
+    <wsdl:part element="tns:URLVerificationResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVDNSOrderResponse">
+    <wsdl:part element="tns:DVDNSOrderResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="EVOrder">
+    <wsdl:part element="tns:EVOrder" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ResendEmail">
+    <wsdl:part element="tns:ResendEmail" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OVOrderJPWithoutCSR">
+    <wsdl:part element="tns:OVOrderJPWithoutCSR" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="URLVerificationForIssueResponse">
+    <wsdl:part element="tns:URLVerificationForIssueResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetApproverList">
+    <wsdl:part element="tns:GetApproverList" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ModifyOrder">
+    <wsdl:part element="tns:ModifyOrder" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OVOrderJPResponse">
+    <wsdl:part element="tns:OVOrderJPResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ChangeApproverEmail">
+    <wsdl:part element="tns:ChangeApproverEmail" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OVOrderJPWithoutCSRResponse">
+    <wsdl:part element="tns:OVOrderJPWithoutCSRResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVOrderResponse">
+    <wsdl:part element="tns:DVOrderResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVDNSOrderWithoutCsrResponse">
+    <wsdl:part element="tns:DVDNSOrderWithoutCsrResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OVOrderWithoutCSR">
+    <wsdl:part element="tns:OVOrderWithoutCSR" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVDNSOrderWithoutCsr">
+    <wsdl:part element="tns:DVDNSOrderWithoutCsr" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OVOrderJP">
+    <wsdl:part element="tns:OVOrderJP" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OVOrder">
+    <wsdl:part element="tns:OVOrder" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVOrder">
+    <wsdl:part element="tns:DVOrder" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetDVApproverList">
+    <wsdl:part element="tns:GetDVApproverList" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ChangeSubjectAltNameResponse">
+    <wsdl:part element="tns:ChangeSubjectAltNameResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ModifyOrderResponse">
+    <wsdl:part element="tns:ModifyOrderResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="CertInviteOrderResponse">
+    <wsdl:part element="tns:CertInviteOrderResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetDVApproverListResponse">
+    <wsdl:part element="tns:GetDVApproverListResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ChangeSubjectAltName">
+    <wsdl:part element="tns:ChangeSubjectAltName" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="CertInviteOrder">
+    <wsdl:part element="tns:CertInviteOrder" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ChangeApproverEmailResponse">
+    <wsdl:part element="tns:ChangeApproverEmailResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVOrderWithoutCSRResponse">
+    <wsdl:part element="tns:DVOrderWithoutCSRResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="URLVerificationForIssue">
+    <wsdl:part element="tns:URLVerificationForIssue" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="URLVerification">
+    <wsdl:part element="tns:URLVerification" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="EVOrderResponse">
+    <wsdl:part element="tns:EVOrderResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="EVOrderJPResponse">
+    <wsdl:part element="tns:EVOrderJPResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="OVOrderWithoutCSRResponse">
+    <wsdl:part element="tns:OVOrderWithoutCSRResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVDNSVerificationForIssueResponse">
+    <wsdl:part element="tns:DVDNSVerificationForIssueResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="URLVerificationWithoutCSR">
+    <wsdl:part element="tns:URLVerificationWithoutCSR" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="EVOrderJP">
+    <wsdl:part element="tns:EVOrderJP" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVDNSVerificationForIssue">
+    <wsdl:part element="tns:DVDNSVerificationForIssue" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="ResendEmailResponse">
+    <wsdl:part element="tns:ResendEmailResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="URLVerificationWithoutCSRResponse">
+    <wsdl:part element="tns:URLVerificationWithoutCSRResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="GetApproverListResponse">
+    <wsdl:part element="tns:GetApproverListResponse" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVOrderWithoutCSR">
+    <wsdl:part element="tns:DVOrderWithoutCSR" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="DVDNSOrder">
+    <wsdl:part element="tns:DVDNSOrder" name="parameters">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="ServerSSLV1">
+    <wsdl:operation name="DVOrderWithoutCSR">
+      <wsdl:input message="tns:DVOrderWithoutCSR" name="DVOrderWithoutCSR">
+    </wsdl:input>
+      <wsdl:output message="tns:DVOrderWithoutCSRResponse" name="DVOrderWithoutCSRResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ModifyOrder">
+      <wsdl:input message="tns:ModifyOrder" name="ModifyOrder">
+    </wsdl:input>
+      <wsdl:output message="tns:ModifyOrderResponse" name="ModifyOrderResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="EVOrder">
+      <wsdl:input message="tns:EVOrder" name="EVOrder">
+    </wsdl:input>
+      <wsdl:output message="tns:EVOrderResponse" name="EVOrderResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="URLVerificationForIssue">
+      <wsdl:input message="tns:URLVerificationForIssue" name="URLVerificationForIssue">
+    </wsdl:input>
+      <wsdl:output message="tns:URLVerificationForIssueResponse" name="URLVerificationForIssueResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetApproverList">
+      <wsdl:input message="tns:GetApproverList" name="GetApproverList">
+    </wsdl:input>
+      <wsdl:output message="tns:GetApproverListResponse" name="GetApproverListResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="EVOrderJP">
+      <wsdl:input message="tns:EVOrderJP" name="EVOrderJP">
+    </wsdl:input>
+      <wsdl:output message="tns:EVOrderJPResponse" name="EVOrderJPResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVDNSVerificationForIssue">
+      <wsdl:input message="tns:DVDNSVerificationForIssue" name="DVDNSVerificationForIssue">
+    </wsdl:input>
+      <wsdl:output message="tns:DVDNSVerificationForIssueResponse" name="DVDNSVerificationForIssueResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVDNSOrderWithoutCsr">
+      <wsdl:input message="tns:DVDNSOrderWithoutCsr" name="DVDNSOrderWithoutCsr">
+    </wsdl:input>
+      <wsdl:output message="tns:DVDNSOrderWithoutCsrResponse" name="DVDNSOrderWithoutCsrResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetDVApproverList">
+      <wsdl:input message="tns:GetDVApproverList" name="GetDVApproverList">
+    </wsdl:input>
+      <wsdl:output message="tns:GetDVApproverListResponse" name="GetDVApproverListResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CertInviteOrder">
+      <wsdl:input message="tns:CertInviteOrder" name="CertInviteOrder">
+    </wsdl:input>
+      <wsdl:output message="tns:CertInviteOrderResponse" name="CertInviteOrderResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ResendEmail">
+      <wsdl:input message="tns:ResendEmail" name="ResendEmail">
+    </wsdl:input>
+      <wsdl:output message="tns:ResendEmailResponse" name="ResendEmailResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrderWithoutCSR">
+      <wsdl:input message="tns:OVOrderWithoutCSR" name="OVOrderWithoutCSR">
+    </wsdl:input>
+      <wsdl:output message="tns:OVOrderWithoutCSRResponse" name="OVOrderWithoutCSRResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVOrder">
+      <wsdl:input message="tns:DVOrder" name="DVOrder">
+    </wsdl:input>
+      <wsdl:output message="tns:DVOrderResponse" name="DVOrderResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="URLVerification">
+      <wsdl:input message="tns:URLVerification" name="URLVerification">
+    </wsdl:input>
+      <wsdl:output message="tns:URLVerificationResponse" name="URLVerificationResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrderJPWithoutCSR">
+      <wsdl:input message="tns:OVOrderJPWithoutCSR" name="OVOrderJPWithoutCSR">
+    </wsdl:input>
+      <wsdl:output message="tns:OVOrderJPWithoutCSRResponse" name="OVOrderJPWithoutCSRResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVDNSOrder">
+      <wsdl:input message="tns:DVDNSOrder" name="DVDNSOrder">
+    </wsdl:input>
+      <wsdl:output message="tns:DVDNSOrderResponse" name="DVDNSOrderResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeSubjectAltName">
+      <wsdl:input message="tns:ChangeSubjectAltName" name="ChangeSubjectAltName">
+    </wsdl:input>
+      <wsdl:output message="tns:ChangeSubjectAltNameResponse" name="ChangeSubjectAltNameResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeApproverEmail">
+      <wsdl:input message="tns:ChangeApproverEmail" name="ChangeApproverEmail">
+    </wsdl:input>
+      <wsdl:output message="tns:ChangeApproverEmailResponse" name="ChangeApproverEmailResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrderJP">
+      <wsdl:input message="tns:OVOrderJP" name="OVOrderJP">
+    </wsdl:input>
+      <wsdl:output message="tns:OVOrderJPResponse" name="OVOrderJPResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="URLVerificationWithoutCSR">
+      <wsdl:input message="tns:URLVerificationWithoutCSR" name="URLVerificationWithoutCSR">
+    </wsdl:input>
+      <wsdl:output message="tns:URLVerificationWithoutCSRResponse" name="URLVerificationWithoutCSRResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrder">
+      <wsdl:input message="tns:OVOrder" name="OVOrder">
+    </wsdl:input>
+      <wsdl:output message="tns:OVOrderResponse" name="OVOrderResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="ServerSSLServiceSoapBinding" type="tns:ServerSSLV1">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http" />
+    <wsdl:operation name="ModifyOrder">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="ModifyOrder">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="ModifyOrderResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVOrderWithoutCSR">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="DVOrderWithoutCSR">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="DVOrderWithoutCSRResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="EVOrder">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="EVOrder">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="EVOrderResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="URLVerificationForIssue">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="URLVerificationForIssue">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="URLVerificationForIssueResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetApproverList">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="GetApproverList">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="GetApproverListResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="EVOrderJP">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="EVOrderJP">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="EVOrderJPResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVDNSVerificationForIssue">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="DVDNSVerificationForIssue">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="DVDNSVerificationForIssueResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVDNSOrderWithoutCsr">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="DVDNSOrderWithoutCsr">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="DVDNSOrderWithoutCsrResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="GetDVApproverList">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="GetDVApproverList">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="GetDVApproverListResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="CertInviteOrder">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="CertInviteOrder">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="CertInviteOrderResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ResendEmail">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="ResendEmail">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="ResendEmailResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrderWithoutCSR">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="OVOrderWithoutCSR">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="OVOrderWithoutCSRResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVOrder">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="DVOrder">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="DVOrderResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="URLVerification">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="URLVerification">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="URLVerificationResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrderJPWithoutCSR">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="OVOrderJPWithoutCSR">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="OVOrderJPWithoutCSRResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeSubjectAltName">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="ChangeSubjectAltName">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="ChangeSubjectAltNameResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="DVDNSOrder">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="DVDNSOrder">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="DVDNSOrderResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="ChangeApproverEmail">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="ChangeApproverEmail">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="ChangeApproverEmailResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrderJP">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="OVOrderJP">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="OVOrderJPResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="URLVerificationWithoutCSR">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="URLVerificationWithoutCSR">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="URLVerificationWithoutCSRResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="OVOrder">
+      <soap:operation soapAction="" style="document" />
+      <wsdl:input name="OVOrder">
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output name="OVOrderResponse">
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="ServerSSLService">
+    <wsdl:port binding="tns:ServerSSLServiceSoapBinding" name="ServerSSLV1Port">
+      <soap:address location="https://system.globalsign.com/kb/ws/v1/ServerSSLService" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
