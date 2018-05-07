@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"log"
-	"sync"
 
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
-	"github.com/xenolf/lego/acme"
+	lego "github.com/xenolf/lego/acme"
 
 	"crypto/rand"
 	"crypto/rsa"
@@ -20,22 +20,22 @@ import (
 )
 
 type certAuthority struct {
-	db       *bolt.DB
-	acmeURL  string
-	HTTPLock *sync.Mutex
+	db           *bolt.DB
+	acmeURL      string
+	httpProvider *httpRouterProvider
 }
 
 type ACMEUserData struct {
 	Email        string                     `json:"email"`
-	Registration *acme.RegistrationResource `json:"registration"`
+	Registration *lego.RegistrationResource `json:"registration"`
 	Key          []byte                     `json:"key"`
 }
 
 func NewAcmeCertAuthority(db *bolt.DB, acmeURL string) *certAuthority {
 	return &certAuthority{
-		db:       db,
-		acmeURL:  acmeURL,
-		HTTPLock: &sync.Mutex{},
+		db:           db,
+		acmeURL:      acmeURL,
+		httpProvider: newHttpRouteProvider(),
 	}
 }
 
@@ -43,7 +43,7 @@ func (u ACMEUserData) GetEmail() string {
 	return u.Email
 }
 
-func (u ACMEUserData) GetRegistration() *acme.RegistrationResource {
+func (u ACMEUserData) GetRegistration() *lego.RegistrationResource {
 	return u.Registration
 }
 
@@ -62,10 +62,7 @@ func (u ACMEUserData) GetPrivateKey() crypto.PrivateKey {
 }
 
 func (ca *certAuthority) ProvisionCert(certreq *k8s.Certificate) (*cert.Bundle, error) {
-	acmeClient, mutex, err := ca.init(certreq)
-
-	mutex.Lock()
-	defer mutex.Unlock()
+	acmeClient, err := ca.init(certreq)
 
 	if err == nil {
 		return nil, err
@@ -97,16 +94,13 @@ func (ca *certAuthority) ProvisionCert(certreq *k8s.Certificate) (*cert.Bundle, 
 }
 
 func (ca *certAuthority) RenewCert(certreq *k8s.Certificate, certDetails *cert.Bundle) (*cert.Bundle, error) {
-	acmeClient, mutex, err := ca.init(certreq)
-
-	mutex.Lock()
-	defer mutex.Unlock()
+	acmeClient, err := ca.init(certreq)
 
 	if err != nil {
 		return nil, err
 	}
 
-	certReq := acme.CertificateResource{
+	certReq := lego.CertificateResource{
 		Domain:        certDetails.DomainName,
 		Certificate:   certDetails.Cert,
 		PrivateKey:    certDetails.PrivateKey,
@@ -136,11 +130,11 @@ func (ca *certAuthority) RenewCert(certreq *k8s.Certificate, certDetails *cert.B
 	return &ret, nil
 }
 
-func (ca *certAuthority) init(certreq *k8s.Certificate) (*acme.Client, *sync.Mutex, error) {
+func (ca *certAuthority) init(certreq *k8s.Certificate) (*lego.Client, error) {
 	email := certreq.Spec.Email
 	var (
 		userInfoRaw  []byte
-		acmeUserInfo acme.User
+		acmeUserInfo lego.User
 	)
 
 	err := ca.db.View(func(tx *bolt.Tx) error {
@@ -149,7 +143,7 @@ func (ca *certAuthority) init(certreq *k8s.Certificate) (*acme.Client, *sync.Mut
 	})
 
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error pulling cached user info for %s", email)
+		return nil, errors.Wrapf(err, "Error pulling cached user info for %s", email)
 	}
 
 	if userInfoRaw == nil {
@@ -157,19 +151,19 @@ func (ca *certAuthority) init(certreq *k8s.Certificate) (*acme.Client, *sync.Mut
 	}
 
 	if err := json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
-		return nil, nil, errors.Wrapf(err, "Error while unmarshalling user info for %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Error while unmarshalling user info for %v", certreq.Spec.Domain)
 	}
 
 	log.Printf("Creating ACME client for existing account %v, domain %v, and challange %v", email, certreq.Spec.Domain, certreq.Spec.Challange)
 	return ca.newACMEClient(acmeUserInfo, certreq.Spec.Challange)
 }
 
-func (ca *certAuthority) CreateNewUser(certreq *k8s.Certificate, email string) (*acme.Client, *sync.Mutex, error) {
+func (ca *certAuthority) CreateNewUser(certreq *k8s.Certificate, email string) (*lego.Client, error) {
 	userKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	var acmeUserInfo ACMEUserData
 
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error while generating rsa key for new user for domain %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Error while generating rsa key for new user for domain %v", certreq.Spec.Domain)
 	}
 
 	acmeUserInfo.Email = email
@@ -179,26 +173,26 @@ func (ca *certAuthority) CreateNewUser(certreq *k8s.Certificate, email string) (
 	})
 
 	log.Printf("Creating new ACME client for new account %v, domain %v, and challange type %v", email, certreq.Spec.Domain, certreq.Spec.Challange)
-	acmeClient, acmeClientMutex, err := ca.newACMEClient(acmeUserInfo, certreq.Spec.Challange)
+	acmeClient, err := ca.newACMEClient(acmeUserInfo, certreq.Spec.Challange)
 
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error while creating ACME client for %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Error while creating ACME client for %v", certreq.Spec.Domain)
 	}
 
 	// Register
 	acmeUserInfo.Registration, err = acmeClient.Register()
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error while registering user for new domain %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Error while registering user for new domain %v", certreq.Spec.Domain)
 	}
 
 	// Agree to TOS
 	if err = acmeClient.AgreeToTOS(); err != nil {
-		return nil, nil, errors.Wrapf(err, "Error while agreeing to acme TOS for new domain %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Error while agreeing to acme TOS for new domain %v", certreq.Spec.Domain)
 	}
 
 	userInfoRaw, err := json.Marshal(&acmeUserInfo)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error while marshalling user info for domain %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Error while marshalling user info for domain %v", certreq.Spec.Domain)
 	}
 
 	// Save user info to bolt
@@ -209,24 +203,29 @@ func (ca *certAuthority) CreateNewUser(certreq *k8s.Certificate, email string) (
 	})
 
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "Error while saving user data to bolt for domain %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Error while saving user data to bolt for domain %v", certreq.Spec.Domain)
 	}
 
-	return acmeClient, acmeClientMutex, nil
+	return acmeClient, nil
 }
 
-func (ca *certAuthority) newACMEClient(acmeUser acme.User, challenge string) (*acme.Client, *sync.Mutex, error) {
-	acmeClient, err := acme.NewClient(ca.acmeURL, acmeUser, acme.RSA4096)
+func (ca *certAuthority) newACMEClient(acmeUser lego.User, challenge string) (*lego.Client, error) {
+	acmeClient, err := lego.NewClient(ca.acmeURL, acmeUser, lego.RSA4096)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "Error while generating acme client")
+		return nil, errors.Wrap(err, "Error while generating acme client")
 	}
 
 	switch challenge {
 	case "http":
 		acmeClient.SetHTTPAddress(":5002")
-		acmeClient.ExcludeChallenges([]acme.Challenge{acme.DNS01, acme.TLSSNI01})
-		return acmeClient, ca.HTTPLock, nil
+		acmeClient.ExcludeChallenges([]lego.Challenge{lego.DNS01, lego.TLSSNI01})
+		acmeClient.SetChallengeProvider(lego.HTTP01, ca.httpProvider)
+		return acmeClient, nil
 	default:
-		return nil, nil, errors.Errorf("Unknown challenge type: %v", challenge)
+		return nil, errors.Errorf("Unknown challenge type: %v", challenge)
 	}
+}
+
+func (ca *certAuthority) SetupRoute(router *mux.Router) {
+	ca.httpProvider.SetupRoute(router)
 }

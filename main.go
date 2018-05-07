@@ -60,6 +60,7 @@ func main() {
 	var (
 		kubeconfig       string
 		acmeURL          string
+		globalSignURL    string
 		syncInterval     int
 		dataDir          string
 		certNamespace    string
@@ -69,10 +70,12 @@ func main() {
 		defaultCA        string
 		defaultEmail     string
 		renewBeforeDays  int
+		listen           int
 	)
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
 	flag.StringVar(&acmeURL, "acme-url", "", "The URL to the acme directory to use")
+	flag.StringVar(&globalSignURL, "globalsign-url", "", "The URL to the globalsign api to use")
 	flag.IntVar(&syncInterval, "sync-interval", 30, "Sync interval in seconds")
 	flag.StringVar(&dataDir, "data-dir", "/var/lib/cert-manager", "Data directory path")
 	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
@@ -81,6 +84,7 @@ func main() {
 	flag.StringVar(&defaultChallange, "default-challange", "http", "Default challange type.  Defaults to http.  Options: dns or http")
 	flag.StringVar(&defaultCA, "default-ca", "letsencrypt", "Default certificate authority.  Defaults to letsencrypt.  Options: letsencrypt or globalsign")
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
+	flat.StringVar(&listen, "listen", "5002", "Default port to listen on for HTTP challanges")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
 	flag.Parse()
 
@@ -162,7 +166,7 @@ func main() {
 	}
 
 	// Create the processor
-	p := processor.NewCertProcessor(k8sClient, certClient, acmeURL, certNamespace, tagPrefix, namespaces, defaultCA, defaultChallange, defaultEmail, db, renewBeforeDays)
+	p := processor.NewCertProcessor(k8sClient, certClient, acmeURL, globalSignURL, certNamespace, tagPrefix, namespaces, defaultCA, defaultChallange, defaultEmail, db, renewBeforeDays)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}
@@ -186,6 +190,9 @@ func main() {
 	}
 	wg.Add(1)
 	go p.Maintenance(time.Second*time.Duration(syncInterval), &wg, doneChan)
+
+	wg.Add(1)
+	go p.HTTPServer(listen, &wg, doneChan)
 
 	log.Println("Kubernetes Certificate Controller started successfully.")
 

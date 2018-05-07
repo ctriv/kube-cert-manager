@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"liquidweb.com/kube-cert-manager/internal/cert"
@@ -74,7 +75,27 @@ func (ca *certAuthority) handleHttpProvisioning(certreq *k8s.Certificate) (*cert
 		return nil, ca.errFromOrderResponse(orderRes.Response.OrderResponseHeader)
 	}
 
-	return nil, nil
+	rawcert, err := ca.handleHttpChallange(certreq, orderRes)
+
+	if err != nil {
+		return nil, err
+	}
+
+	bundle := &cert.Bundle{
+		DomainName: certreq.Spec.Domain,
+		AltNames:   certreq.Spec.AltNames,
+		PrivateKey: privateKey,
+		Cert:       rawcert,
+		CAExtras: map[string]string{
+			"order_id": orderRes.Response.OrderID,
+		},
+	}
+
+	return bundle, nil
+}
+
+func (ca *certAuthority) handleHttpChallange(certreq *k8s.Certificate, orderRes *URLVerificationResponse) ([]byte, error) {
+	return []byte("write me"), nil
 }
 
 func (ca *certAuthority) errFromOrderResponse(res *OrderResponseHeader) error {
@@ -173,4 +194,8 @@ func (ca *certAuthority) generateCSR(certreq *k8s.Certificate) ([]byte, []byte, 
 	csrBlock := pem.EncodeToMemory(&pemCSR)
 
 	return privateKeyBlock, csrBlock, nil
+}
+
+func (ca *certAuthority) SetupRoute(router *mux.Router) {
+
 }

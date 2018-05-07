@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"k8s.io/client-go/kubernetes"
@@ -34,12 +35,11 @@ import (
 type certificateAuthority interface {
 	ProvisionCert(*k8s.Certificate) (*cert.Bundle, error)
 	RenewCert(*k8s.Certificate, *cert.Bundle) (*cert.Bundle, error)
+	SetupRoute(*mux.Router)
 }
 
 // CertProcessor holds the shared configuration, state, and locks
 type CertProcessor struct {
-	acmeURL          string
-	globalSignURL    string
 	certNamespace    string
 	tagPrefix        string
 	namespaces       []string
@@ -51,6 +51,7 @@ type CertProcessor struct {
 	TLSLock          sync.Mutex
 	kube             k8s.K8sClient
 	renewBeforeDays  int
+	CAs              map[string]certificateAuthority
 }
 
 // NewCertProcessor creates and populates a CertProcessor
@@ -58,6 +59,7 @@ func NewCertProcessor(
 	kubeclient *kubernetes.Clientset,
 	certClient *rest.RESTClient,
 	acmeURL string,
+	globalSignURL string,
 	certNamespace string,
 	tagPrefix string,
 	namespaces []string,
@@ -68,7 +70,6 @@ func NewCertProcessor(
 	renewBeforeDays int) *CertProcessor {
 	return &CertProcessor{
 		kube:             k8s.NewClient(kubeclient, certClient),
-		acmeURL:          acmeURL,
 		certNamespace:    certNamespace,
 		tagPrefix:        tagPrefix,
 		namespaces:       namespaces,
@@ -77,6 +78,10 @@ func NewCertProcessor(
 		defaultEmail:     defaultEmail,
 		db:               db,
 		renewBeforeDays:  renewBeforeDays,
+		CAs: map[string]certificateAuthority{
+			"letsencrypt": acme.NewAcmeCertAuthority(db, acmeURL),
+			"globalsign:": globalsign.NewGlobalsignCertAuthority(db, globalSignURL),
+		},
 	}
 }
 
@@ -373,14 +378,13 @@ func (p *CertProcessor) gcSecrets() error {
 }
 
 func (p *CertProcessor) caForCert(certreq k8s.Certificate) (certificateAuthority, error) {
-	switch certreq.Spec.CA {
-	case "letsencrypt":
-		return acme.NewAcmeCertAuthority(p.db, p.acmeURL), nil
-	case "globalsign":
-		return globalsign.NewGlobalsignCertAuthority(p.db, p.globalSignURL), nil
-	default:
+	ca, ok := p.CAs[certreq.Spec.CA]
+
+	if !ok {
 		return nil, fmt.Errorf("Unknown cert authority: %s", certreq.Spec.CA)
 	}
+
+	return ca, nil
 }
 
 func (p *CertProcessor) fillInCertDefaults(certreq k8s.Certificate) error {
