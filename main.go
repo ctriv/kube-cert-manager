@@ -70,7 +70,7 @@ func main() {
 		defaultCA        string
 		defaultEmail     string
 		renewBeforeDays  int
-		listen           int
+		listen           string
 	)
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
@@ -84,7 +84,7 @@ func main() {
 	flag.StringVar(&defaultChallange, "default-challange", "http", "Default challange type.  Defaults to http.  Options: dns or http")
 	flag.StringVar(&defaultCA, "default-ca", "letsencrypt", "Default certificate authority.  Defaults to letsencrypt.  Options: letsencrypt or globalsign")
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
-	flat.StringVar(&listen, "listen", "5002", "Default port to listen on for HTTP challanges")
+	flag.StringVar(&listen, "listen", "5002", "Default port to listen on for HTTP challanges")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
 	flag.Parse()
 
