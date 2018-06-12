@@ -226,6 +226,7 @@ func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGro
 	} else {
 		log.Printf("Watching certificates in namespace %s", namespace)
 	}
+	log.Printf("<<<<<<<<<<<<<< about to monitorCertificateEvents >>>>>>>>>>>>>>>>>>>>>>>>")
 	certEvents := p.k8s.monitorCertificateEvents(namespace, doneChan)
 	for {
 		select {
