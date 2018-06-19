@@ -126,6 +126,15 @@ func (k K8sClient) deleteSecret(namespace string, key string) error {
 	return k.c.Secrets(namespace).Delete(key, nil)
 }
 
+func (k K8sClient) deleteCertificate(c Certificate, namespace string) error {
+	log.Printf("About to delete certificate %s in namespace %s ", c.Metadata.Name, namespace)
+	deleteError := k.certClient.Delete().
+		Namespace(namespace).
+		Resource("certificates").
+		Name(c.Metadata.Name).Do().Error()
+	return deleteError
+}
+
 func (k K8sClient) getSecrets(namespace string) ([]v1.Secret, error) {
 	listOpts := v1.ListOptions{}
 	listOpts.LabelSelector = "creator=kube-cert-manager"

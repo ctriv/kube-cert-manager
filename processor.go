@@ -226,6 +226,7 @@ func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGro
 	} else {
 		log.Printf("Watching certificates in namespace %s", namespace)
 	}
+
 	certEvents := p.k8s.monitorCertificateEvents(namespace, doneChan)
 	for {
 		select {
@@ -341,6 +342,7 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 
 	if cert.Status.Provisioned == "false" {
 		log.Printf("Cert %s/%s has already failed to provision.  Skipping.", namespace, cert.Metadata.Name)
+		p.deleteFailedCertIfNeeded(cert, namespace)
 		return true, nil
 	}
 
@@ -638,4 +640,15 @@ func valueOrDefault(a, b string) string {
 		return a
 	}
 	return b
+}
+
+func (p *CertProcessor) deleteFailedCertIfNeeded(c Certificate, namespace string) {
+	cutoff := c.Metadata.CreationTimestamp.Time.UTC().AddDate(0, 0, 7)
+
+	if cutoff.Before(time.Now().UTC()) {
+		err := p.k8s.deleteCertificate(c, namespace)
+		if err != nil {
+			log.Printf("Error deleting cert %s with error %s", c.Metadata.Name, err)
+		}
+	}
 }
