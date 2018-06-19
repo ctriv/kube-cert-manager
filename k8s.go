@@ -127,7 +127,7 @@ func (k K8sClient) deleteSecret(namespace string, key string) error {
 }
 
 func (k K8sClient) deleteCertificate(c Certificate, namespace string) error {
-	log.Printf("About to delete certificate " + c.Metadata.Name + " / " + namespace)
+	log.Printf("About to delete certificate %s in namespace %s ", c.Metadata.Name, namespace)
 	deleteError := k.certClient.Delete().
 		Namespace(namespace).
 		Resource("certificates").

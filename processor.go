@@ -646,9 +646,9 @@ func (p *CertProcessor) deleteFailedCertIfNeeded(c Certificate, namespace string
 	cutoff := c.Metadata.CreationTimestamp.Time.UTC().AddDate(0, 0, 7)
 
 	if cutoff.Before(time.Now().UTC()) {
-		error := p.k8s.deleteCertificate(c, namespace)
-		if error != nil {
-			log.Printf("Error deleting cert %s with error %s", c.Metadata.Name, error)
+		err := p.k8s.deleteCertificate(c, namespace)
+		if err != nil {
+			log.Printf("Error deleting cert %s with error %s", c.Metadata.Name, err)
 		}
 	}
 }
