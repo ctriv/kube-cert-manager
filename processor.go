@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/boltdb/bolt"
+	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 	"github.com/xenolf/lego/acme"
 	"github.com/xenolf/lego/providers/dns/cloudflare"
@@ -57,11 +58,10 @@ type CertProcessor struct {
 	defaultProvider  string
 	defaultEmail     string
 	db               *bolt.DB
-	Lock             sync.Mutex
-	HTTPLock         sync.Mutex
-	TLSLock          sync.Mutex
+	httpProvider     *httpRouterProvider
 	k8s              K8sClient
 	renewBeforeDays  int
+	wp               *workerpool.WorkerPool
 }
 
 // NewCertProcessor creates and populates a CertProcessor
@@ -76,7 +76,8 @@ func NewCertProcessor(
 	defaultProvider string,
 	defaultEmail string,
 	db *bolt.DB,
-	renewBeforeDays int) *CertProcessor {
+	renewBeforeDays int,
+	workers int) *CertProcessor {
 	return &CertProcessor{
 		k8s:              K8sClient{c: k8s, certClient: certClient},
 		acmeURL:          acmeURL,
@@ -88,6 +89,8 @@ func NewCertProcessor(
 		defaultEmail:     defaultEmail,
 		db:               db,
 		renewBeforeDays:  renewBeforeDays,
+		httpProvider:     newHttpRouterProvider(),
+		wp:               workerpool.New(workers),
 	}
 }
 
@@ -113,12 +116,9 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 	switch provider {
 	case "http":
 		acmeClient.SetHTTPAddress(":5002")
+		acmeClient.SetChallengeProvider(acme.HTTP01, p.httpProvider)
 		acmeClient.ExcludeChallenges([]acme.Challenge{acme.DNS01, acme.TLSSNI01})
-		return acmeClient, &p.HTTPLock, nil
-	case "tls":
-		acmeClient.SetTLSAddress(":8081")
-		acmeClient.ExcludeChallenges([]acme.Challenge{acme.HTTP01, acme.DNS01})
-		return acmeClient, &p.TLSLock, nil
+		return acmeClient, nil, nil
 	case "cloudflare":
 		return initDNSProvider(cloudflare.NewDNSProvider())
 	case "digitalocean":
@@ -155,26 +155,52 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 }
 
 func (p *CertProcessor) syncCertificates() error {
-	p.Lock.Lock()
-	defer p.Lock.Unlock()
-
+	log.Println("Starting certificate sync")
 	certificates, err := p.getCertificates()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "couldn't fetch certificates for sync")
 	}
 
-	var wg sync.WaitGroup
 	for _, cert := range certificates {
-		wg.Add(1)
-		go func(cert Certificate) {
-			defer wg.Done()
-			_, err := p.processCertificate(cert)
-			if err != nil {
-				log.Printf("Error while processing certificate during sync: %v", err)
-			}
-		}(cert)
+		_, err := p.processCertificate(cert)
+		if err != nil {
+			log.Printf("Error while processing certificate during sync: %v", err)
+		}
+
 	}
-	wg.Wait()
+	log.Println("Completed certificate sync")
+
+	return nil
+}
+
+func (p *CertProcessor) gcSecrets() error {
+	// Fetch secrets before certificates. That way, if a race occurs,
+	// we will only fail to delete a secret, not accidentally delete
+	// one that's still referenced.
+	log.Println("Starting secret gc")
+	secrets, err := p.getSecrets()
+	if err != nil {
+		return errors.Wrap(err, "couldn't get secrets for gc")
+	}
+	certs, err := p.getCertificates()
+	if err != nil {
+		return errors.Wrap(err, "couldn't get certs for gc")
+	}
+	usedSecrets := map[string]bool{}
+	for _, cert := range certs {
+		usedSecrets[cert.Metadata.Namespace+" "+p.secretName(cert)] = true
+	}
+	for _, secret := range secrets {
+		if usedSecrets[secret.Namespace+" "+secret.Name] {
+			continue
+		}
+		// need to replace to to use an annotation to mark the secret as from us
+		log.Printf("Deleting unused secret %s in namespace %s", secret.Name, secret.Namespace)
+		if err := p.k8s.deleteSecret(secret.Namespace, secret.Name); err != nil {
+			log.Printf("Error deleting secret %s/%s: %v", secret.Namespace, secret.Name, err)
+		}
+	}
+	log.Println("Completed secret gc")
 	return nil
 }
 
@@ -218,8 +244,6 @@ func (p *CertProcessor) getCertificates() ([]Certificate, error) {
 	return certificates, nil
 }
 
-
-
 func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGroup, doneChan <-chan struct{}) {
 	if namespace == v1.NamespaceAll {
 		log.Printf("Watching certificates in all namespaces")
@@ -231,10 +255,12 @@ func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGro
 	for {
 		select {
 		case event := <-certEvents:
-			err := p.processCertificateEvent(event)
-			if err != nil {
-				log.Printf("Error while processing certificate event: %v", err)
-			}
+			p.wp.Submit(func() {
+				err := p.processCertificateEvent(event)
+				if err != nil {
+					log.Printf("Error while processing certificate event: %v", err)
+				}
+			})
 		case <-doneChan:
 			wg.Done()
 			log.Println("Stopped certificate event watcher.")
@@ -255,15 +281,13 @@ func (p *CertProcessor) maintenance(syncInterval time.Duration, wg *sync.WaitGro
 			}
 		case <-doneChan:
 			wg.Done()
-			log.Println("Stopped refresh loop.")
+			log.Println("Stopped maintenance loop.")
 			return
 		}
 	}
 }
 
 func (p *CertProcessor) processCertificateEvent(c CertificateEvent) error {
-	p.Lock.Lock()
-	defer p.Lock.Unlock()
 	switch c.Type {
 	case "ADDED", "MODIFIED":
 		_, err := p.processCertificate(c.Object)
@@ -402,10 +426,9 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
 
-
 	// Handle user information
 	if userInfoRaw != nil { // Use existing user
-		if err := json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
+		if err = json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
 			return p.NoteCertError(cert, err, "Error while unmarshalling user info for %v", cert.Spec.Domain)
 		}
 
@@ -580,51 +603,18 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 	return true, nil
 }
 
-
 func (p *CertProcessor) NoteCertError(cert Certificate, err error, format string, args ...interface{}) (bool, error) {
-	namespace   := certificateNamespace(cert)
+	namespace := certificateNamespace(cert)
 	wrapped_err := errors.Wrapf(err, format, args)
 	now, _ := time.Now().UTC().MarshalText()
 
 	p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
 		Provisioned: "false",
-		ErrorDate: string(now),
-		ErrorMsg: wrapped_err.Error(),
+		ErrorDate:   string(now),
+		ErrorMsg:    wrapped_err.Error(),
 	})
 
 	return false, wrapped_err
-}
-
-func (p *CertProcessor) gcSecrets() error {
-	p.Lock.Lock()
-	defer p.Lock.Unlock()
-
-	// Fetch secrets before certificates. That way, if a race occurs,
-	// we will only fail to delete a secret, not accidentally delete
-	// one that's still referenced.
-	secrets, err := p.getSecrets()
-	if err != nil {
-		return err
-	}
-	certs, err := p.getCertificates()
-	if err != nil {
-		return err
-	}
-	usedSecrets := map[string]bool{}
-	for _, cert := range certs {
-		usedSecrets[cert.Metadata.Namespace+" "+p.secretName(cert)] = true
-	}
-	for _, secret := range secrets {
-		if usedSecrets[secret.Namespace+" "+secret.Name] {
-			continue
-		}
-		// need to replace to to use an annotation to mark the secret as from us
-		log.Printf("Deleting unused secret %s in namespace %s", secret.Name, secret.Namespace)
-		if err := p.k8s.deleteSecret(secret.Namespace, secret.Name); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func certificateNamespace(c Certificate) string {
@@ -633,7 +623,6 @@ func certificateNamespace(c Certificate) string {
 	}
 	return "default"
 }
-
 
 func valueOrDefault(a, b string) string {
 	if a != "" {

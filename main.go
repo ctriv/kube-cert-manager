@@ -66,6 +66,7 @@ func main() {
 		defaultProvider  string
 		defaultEmail     string
 		renewBeforeDays  int
+		workers          int
 	)
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
@@ -79,6 +80,7 @@ func main() {
 	flag.StringVar(&defaultProvider, "default-provider", "", "Default handler to handle ACME challenges")
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
+	flag.IntVar(&workers, "workers", 4, "Number of parallel jobs to run at once")
 	flag.Parse()
 
 	if acmeURL == "" {
@@ -159,7 +161,7 @@ func main() {
 	}
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays)
+	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays, workers)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}
@@ -183,6 +185,9 @@ func main() {
 	}
 	wg.Add(1)
 	go p.maintenance(time.Second*time.Duration(syncInterval), &wg, doneChan)
+
+	wg.Add(1)
+	go p.HTTPServer("5002", &wg, doneChan)
 
 	log.Println("Kubernetes Certificate Controller started successfully.")
 
