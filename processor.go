@@ -354,7 +354,7 @@ func equalAltNames(a, b []string) bool {
 // processCertificate creates or renews the corresponding secret
 // processCertificate will create new ACME users if necessary, and complete ACME challenges
 // processCertificate caches ACME user and certificate information in boltdb for reuse
-func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, err error) {
+func (p *CertProcessor) processCertificate(cert Certificate) (bool, error) {
 	var (
 		acmeUserInfo    ACMEUserData
 		acmeCertDetails ACMECertDetails
@@ -362,12 +362,26 @@ func (p *CertProcessor) processCertificate(cert Certificate) (processed bool, er
 		acmeClient      *acme.Client
 		acmeClientMutex *sync.Mutex
 	)
+
 	namespace := certificateNamespace(cert)
 
 	if cert.Status.Provisioned == "false" {
-		log.Printf("Cert %s/%s has already failed to provision.  Skipping.", namespace, cert.Metadata.Name)
 		p.deleteFailedCertIfNeeded(cert, namespace)
 		return true, nil
+	}
+	// optimize the case where we just provisioned the cert and updated the status.
+	// Under our old version of kube, we can't use the generation to filter these
+	// status only updates, but we don't want to do a bunch of double work per
+	// cert create, so we do a little time-based debouncing.
+	// When we get on a newer kube, we can do this properly with a client side
+	// de-dup mechanism.
+	if cert.Status.Provisioned == "true" {
+		justCreated, err := p.wasCertJustCreated(cert)
+		if err != nil {
+			log.Println(err)
+		} else if justCreated {
+			return true, nil
+		}
 	}
 
 	// Fetch current certificate data from k8s
@@ -640,4 +654,21 @@ func (p *CertProcessor) deleteFailedCertIfNeeded(c Certificate, namespace string
 			log.Printf("Error deleting cert %s with error %s", c.Metadata.Name, err)
 		}
 	}
+}
+
+func (p *CertProcessor) wasCertJustCreated(c Certificate) (bool, error) {
+	created, err := time.Parse(time.RFC3339, c.Status.CreatedDate)
+
+	if err != nil {
+		return false, errors.Wrapf(err, "could not parse createdDate for %s/%s", c.Metadata.Namespace, c.Metadata.Name)
+	}
+
+	now := time.Now().UTC()
+	age := now.Sub(created)
+
+	if age.Seconds() <= 3 {
+		return true, nil
+	}
+
+	return false, nil
 }
