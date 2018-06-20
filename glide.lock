@@ -1,5 +1,5 @@
-hash: 4a775d3be50b9c2cf37609e27175c8886763be859ef3b03aae3a7cd904269c7f
-updated: 2017-09-08T18:30:07.856802533-04:00
+hash: 15d8a39551ad708d00ee7e09872d4da46c6e2343c37fabf5c13aa4b0e5429950
+updated: 2018-06-20T12:51:03.854552-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -68,6 +68,10 @@ imports:
   subpackages:
   - log
   - swagger
+- name: github.com/gammazero/deque
+  version: b106e3c6d0a1c0aa9b236c635c0d799d4467ee63
+- name: github.com/gammazero/workerpool
+  version: 064b8cd8bb5d04bd94867948640bc7206c528ac1
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
 - name: github.com/go-ini/ini
@@ -97,6 +101,10 @@ imports:
   - query
 - name: github.com/google/gofuzz
   version: bbcb9da2d746f8bdbd6a936686a0a6067ada0ec5
+- name: github.com/gorilla/context
+  version: 08b5f424b9271eedf6f9f0ce86cb9396ed337a42
+- name: github.com/gorilla/mux
+  version: e3702bed27f0d39777b0b37b664b6280e8ef8fbf
 - name: github.com/howeyc/gopass
   version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
 - name: github.com/imdario/mergo
