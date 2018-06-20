@@ -12,23 +12,23 @@ import (
 )
 
 type httpRouterProvider struct {
-	challanges *sync.Map
+	challenges *sync.Map
 }
 
 func newHttpRouterProvider() *httpRouterProvider {
 	return &httpRouterProvider{
-		challanges: new(sync.Map),
+		challenges: new(sync.Map),
 	}
 }
 
 func (h *httpRouterProvider) Present(domain, token, keyAuth string) error {
-	h.challanges.Store(keyFor(domain, token), keyAuth)
+	h.challenges.Store(keyFor(domain, token), keyAuth)
 
 	return nil
 }
 
 func (h *httpRouterProvider) CleanUp(domain, token, keyAuth string) error {
-	h.challanges.Delete(keyFor(domain, token))
+	h.challenges.Delete(keyFor(domain, token))
 
 	return nil
 }
@@ -52,7 +52,7 @@ func (p *CertProcessor) HTTPServer(port string, wg *sync.WaitGroup, doneChan <-c
 			return
 		}
 
-		keyAuth, ok := p.httpProvider.challanges.Load(keyFor(host, vars["id"]))
+		keyAuth, ok := p.httpProvider.challenges.Load(keyFor(host, vars["id"]))
 
 		if !ok {
 			log.Printf("No answer for %s/.well-known/acme-challange/%s", r.Host, vars["id"])
