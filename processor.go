@@ -154,7 +154,7 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 	}
 }
 
-func (p *CertProcessor) syncCertificates() error {
+func (p *CertProcessor) syncCertificates(doneChan <-chan struct{}) error {
 	log.Println("Starting certificate sync")
 	certificates, err := p.getCertificates()
 	if err != nil {
@@ -162,9 +162,14 @@ func (p *CertProcessor) syncCertificates() error {
 	}
 
 	for _, cert := range certificates {
-		_, err := p.processCertificate(cert)
-		if err != nil {
-			log.Printf("Error while processing certificate during sync: %v", err)
+		select {
+		case <-doneChan:
+			return nil
+		default:
+			_, err := p.processCertificate(cert)
+			if err != nil {
+				log.Printf("Error while processing certificate during sync: %v", err)
+			}
 		}
 
 	}
@@ -273,7 +278,7 @@ func (p *CertProcessor) maintenance(syncInterval time.Duration, wg *sync.WaitGro
 	for {
 		select {
 		case <-time.After(syncInterval):
-			if err := p.syncCertificates(); err != nil {
+			if err := p.syncCertificates(doneChan); err != nil {
 				log.Printf("Error while synchronizing certificates during refresh: %s", err)
 			}
 			if err := p.gcSecrets(); err != nil {
