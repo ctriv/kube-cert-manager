@@ -6,7 +6,7 @@ env:
   global:
   - DOCKER_ORG=$(dirname ${TRAVIS_REPO_SLUG})
 go:
-- 1.8.x
+- "1.10.x"
 install:
 - go get github.com/Masterminds/glide
 - glide install
