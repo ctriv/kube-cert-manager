@@ -33,3 +33,4 @@ import:
 - package: github.com/gorilla/mux
   version: ~1.6.2
 - package: github.com/gammazero/workerpool
+- package: github.com/vburenin/nsync

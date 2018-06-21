@@ -38,8 +38,8 @@ type CertificateEvent struct {
 
 type Certificate struct {
 	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta  `json:"metadata"`
-	Spec                 CertificateSpec `json:"spec"`
+	Metadata             api.ObjectMeta    `json:"metadata"`
+	Spec                 CertificateSpec   `json:"spec"`
 	Status               CertificateStatus `json:"status,omitempty"`
 }
 
@@ -57,6 +57,10 @@ func (c *Certificate) GetObjectKind() unversioned.ObjectKind {
 
 func (c *Certificate) GetObjectMeta() meta.Object {
 	return &c.Metadata
+}
+
+func (c *Certificate) FQName() string {
+	return c.Metadata.Namespace + "/" + c.Metadata.Name
 }
 
 type CertificateCopy Certificate
@@ -115,8 +119,6 @@ type ACMECertData struct {
 	PrivateKey []byte
 }
 
-
-
 type ACMEUserData struct {
 	Email        string                     `json:"email"`
 	Registration *acme.RegistrationResource `json:"registration"`
@@ -158,12 +160,12 @@ func (c *ACMECertData) ToSecret(name string, labels map[string]string) *v1.Secre
 	metadata.Name = name
 
 	metadata.Labels = map[string]string{
-		"domain": c.DomainName,
+		"domain":  c.DomainName,
 		"creator": "kube-cert-manager",
 	}
 
 	for key, value := range labels {
-	    metadata.Labels[key] = value
+		metadata.Labels[key] = value
 	}
 
 	data := make(map[string][]byte)
@@ -188,7 +190,6 @@ func (c *ACMECertData) ExpiresDate() time.Time {
 	if err != nil {
 		log.Printf("Error while parsing cert expiration date: %s", err)
 	}
-
 
 	return cert.NotAfter
 }
