@@ -27,6 +27,7 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
+	"github.com/vburenin/nsync"
 	"github.com/xenolf/lego/acme"
 	"github.com/xenolf/lego/providers/dns/cloudflare"
 	"github.com/xenolf/lego/providers/dns/digitalocean"
@@ -62,6 +63,8 @@ type CertProcessor struct {
 	k8s              K8sClient
 	renewBeforeDays  int
 	wp               *workerpool.WorkerPool
+	maintWp          *workerpool.WorkerPool
+	locks            *nsync.NamedMutex
 }
 
 // NewCertProcessor creates and populates a CertProcessor
@@ -91,6 +94,8 @@ func NewCertProcessor(
 		renewBeforeDays:  renewBeforeDays,
 		httpProvider:     newHttpRouterProvider(),
 		wp:               workerpool.New(workers),
+		maintWp:          workerpool.New(workers),
+		locks:            nsync.NewNamedMutex(),
 	}
 }
 
@@ -161,24 +166,36 @@ func (p *CertProcessor) syncCertificates(doneChan <-chan struct{}) error {
 		return errors.Wrap(err, "couldn't fetch certificates for sync")
 	}
 
+	var wg sync.WaitGroup
 	for _, cert := range certificates {
-		select {
-		case <-doneChan:
-			return nil
-		default:
-			_, err := p.processCertificate(cert)
+		copy := cert
+		wg.Add(1)
+		p.maintWp.Submit(func() {
+			defer wg.Done()
+			_, err := p.processCertificate(copy, true)
 			if err != nil {
 				log.Printf("Error while processing certificate during sync: %v", err)
 			}
-		}
-
+		})
 	}
-	log.Println("Completed certificate sync")
+
+	runDone := make(chan struct{})
+	go func() {
+		wg.Wait()
+		log.Println("Completed certificate sync")
+		close(runDone)
+	}()
+	select {
+	case <-doneChan:
+		// the program is exiting,
+	case <-runDone:
+		// we've finished all the jobs for this run
+	}
 
 	return nil
 }
 
-func (p *CertProcessor) gcSecrets() error {
+func (p *CertProcessor) gcSecrets(doneChan <-chan struct{}) error {
 	// Fetch secrets before certificates. That way, if a race occurs,
 	// we will only fail to delete a secret, not accidentally delete
 	// one that's still referenced.
@@ -195,17 +212,37 @@ func (p *CertProcessor) gcSecrets() error {
 	for _, cert := range certs {
 		usedSecrets[cert.Metadata.Namespace+" "+p.secretName(cert)] = true
 	}
+
+	var wg sync.WaitGroup
 	for _, secret := range secrets {
 		if usedSecrets[secret.Namespace+" "+secret.Name] {
 			continue
 		}
-		// need to replace to to use an annotation to mark the secret as from us
-		log.Printf("Deleting unused secret %s in namespace %s", secret.Name, secret.Namespace)
-		if err := p.k8s.deleteSecret(secret.Namespace, secret.Name); err != nil {
-			log.Printf("Error deleting secret %s/%s: %v", secret.Namespace, secret.Name, err)
-		}
+		wg.Add(1)
+		copy := secret
+		p.maintWp.Submit(func() {
+			defer wg.Done()
+			// need to replace to to use an annotation to mark the secret as from us
+			log.Printf("Deleting unused secret %s in namespace %s", copy.Name, copy.Namespace)
+			if err := p.k8s.deleteSecret(copy.Namespace, copy.Name); err != nil {
+				log.Printf("Error deleting secret %s/%s: %v", copy.Namespace, copy.Name, err)
+			}
+		})
 	}
-	log.Println("Completed secret gc")
+
+	runDone := make(chan struct{})
+	go func() {
+		wg.Wait()
+		log.Println("Completed secret gc")
+		close(runDone)
+	}()
+	select {
+	case <-doneChan:
+		// the program is exiting,
+	case <-runDone:
+		// we've finished all the jobs for this run
+	}
+
 	return nil
 }
 
@@ -267,6 +304,7 @@ func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGro
 				}
 			})
 		case <-doneChan:
+			p.wp.Stop()
 			wg.Done()
 			log.Println("Stopped certificate event watcher.")
 			return
@@ -281,10 +319,11 @@ func (p *CertProcessor) maintenance(syncInterval time.Duration, wg *sync.WaitGro
 			if err := p.syncCertificates(doneChan); err != nil {
 				log.Printf("Error while synchronizing certificates during refresh: %s", err)
 			}
-			if err := p.gcSecrets(); err != nil {
+			if err := p.gcSecrets(doneChan); err != nil {
 				log.Printf("Error cleaning up secrets: %s", err)
 			}
 		case <-doneChan:
+			p.maintWp.Stop()
 			wg.Done()
 			log.Println("Stopped maintenance loop.")
 			return
@@ -295,7 +334,7 @@ func (p *CertProcessor) maintenance(syncInterval time.Duration, wg *sync.WaitGro
 func (p *CertProcessor) processCertificateEvent(c CertificateEvent) error {
 	switch c.Type {
 	case "ADDED", "MODIFIED":
-		_, err := p.processCertificate(c.Object)
+		_, err := p.processCertificate(c.Object, false)
 		return err
 	}
 	return nil
@@ -359,7 +398,7 @@ func equalAltNames(a, b []string) bool {
 // processCertificate creates or renews the corresponding secret
 // processCertificate will create new ACME users if necessary, and complete ACME challenges
 // processCertificate caches ACME user and certificate information in boltdb for reuse
-func (p *CertProcessor) processCertificate(cert Certificate) (bool, error) {
+func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (bool, error) {
 	var (
 		acmeUserInfo    ACMEUserData
 		acmeCertDetails ACMECertDetails
@@ -368,25 +407,24 @@ func (p *CertProcessor) processCertificate(cert Certificate) (bool, error) {
 		acmeClientMutex *sync.Mutex
 	)
 
+	gotlock := p.locks.TryLock(cert.FQName())
+	if !gotlock {
+		log.Printf("%s is currently being worked on, skipping...", cert.FQName())
+		return false, nil
+	}
+	defer p.locks.Unlock(cert.FQName())
+
 	namespace := certificateNamespace(cert)
 
 	if cert.Status.Provisioned == "false" {
 		p.deleteFailedCertIfNeeded(cert, namespace)
 		return true, nil
 	}
-	// optimize the case where we just provisioned the cert and updated the status.
-	// Under our old version of kube, we can't use the generation to filter these
-	// status only updates, but we don't want to do a bunch of double work per
-	// cert create, so we do a little time-based debouncing.
-	// When we get on a newer kube, we can do this properly with a client side
-	// de-dup mechanism.
-	if cert.Status.Provisioned == "true" {
-		justCreated, err := p.wasCertJustCreated(cert)
-		if err != nil {
-			log.Println(err)
-		} else if justCreated {
-			return true, nil
-		}
+
+	if cert.Status.Provisioned == "true" && !forMaint {
+		// we don't currently support updates to the cert.  Once we're on a newer
+		// kube api with support for generation updates, we can do updates.
+		return false, nil
 	}
 
 	// Fetch current certificate data from k8s
@@ -659,21 +697,4 @@ func (p *CertProcessor) deleteFailedCertIfNeeded(c Certificate, namespace string
 			log.Printf("Error deleting cert %s with error %s", c.Metadata.Name, err)
 		}
 	}
-}
-
-func (p *CertProcessor) wasCertJustCreated(c Certificate) (bool, error) {
-	created, err := time.Parse(time.RFC3339, c.Status.CreatedDate)
-
-	if err != nil {
-		return false, errors.Wrapf(err, "could not parse createdDate for %s/%s", c.Metadata.Namespace, c.Metadata.Name)
-	}
-
-	now := time.Now().UTC()
-	age := now.Sub(created)
-
-	if age.Seconds() <= 3 {
-		return true, nil
-	}
-
-	return false, nil
 }

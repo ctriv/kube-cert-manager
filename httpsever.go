@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -44,12 +45,16 @@ func (p *CertProcessor) HTTPServer(port string, wg *sync.WaitGroup, doneChan <-c
 		w.Header().Add("Content-Type", "text/plain")
 
 		vars := mux.Vars(r)
-		host, _, err := net.SplitHostPort(r.Host)
-		if err != nil {
-			log.Printf("Couldn't split %s into host and port: %v", r.Host, err)
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Error"))
-			return
+		host := r.Host
+		if strings.Contains(host, ":") {
+			var err error
+			host, _, err = net.SplitHostPort(r.Host)
+			if err != nil {
+				log.Printf("Couldn't split %s into host and port: %v", r.Host, err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("Error"))
+				return
+			}
 		}
 
 		keyAuth, ok := p.httpProvider.challenges.Load(keyFor(host, vars["id"]))

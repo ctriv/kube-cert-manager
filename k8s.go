@@ -30,9 +30,6 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-
-
-
 func (k K8sClient) createEvent(ev v1.Event) {
 	now := unversioned.Now()
 	ev.Name = fmt.Sprintf("%s.%x", ev.InvolvedObject.Name, now.UnixNano())
@@ -63,7 +60,7 @@ func (k K8sClient) updateCertStatus(namespace string, name string, status Certif
 
 	update["status"] = status
 
-	patch_err := k._doCertPatch(namespace, name, update);
+	patch_err := k._doCertPatch(namespace, name, update)
 
 	if patch_err != nil {
 		log.Printf("ERROR updating status: %v\n", patch_err)
@@ -71,7 +68,6 @@ func (k K8sClient) updateCertStatus(namespace string, name string, status Certif
 		log.Printf("UPDATED status for %s/%s: %#v\n", namespace, name, status)
 	}
 }
-
 
 func (k K8sClient) _doCertPatch(namespace string, name string, obj interface{}) error {
 	raw_patch, json_error := json.Marshal(obj)
@@ -90,7 +86,6 @@ func (k K8sClient) _doCertPatch(namespace string, name string, obj interface{}) 
 
 	return patch_err
 }
-
 
 func (k K8sClient) getSecret(namespace string, key string) (*v1.Secret, error) {
 	secret, err := k.c.Core().Secrets(namespace).Get(key)
@@ -163,7 +158,6 @@ func (k K8sClient) getCertificates(namespace string) ([]Certificate, error) {
 		}
 	}
 }
-
 
 // Copied from cache.NewListWatchFromClient since that constructor doesn't
 // allow labelselectors, but labelselectors should be preferred over field
@@ -261,7 +255,6 @@ func getDomainFromLabel(s *v1.Secret, tagPrefix string) string {
 	}
 	return domain
 }
-
 
 func addTagPrefix(prefix, tag string) string {
 	if prefix == "" {

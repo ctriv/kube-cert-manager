@@ -1,5 +1,5 @@
-hash: 15d8a39551ad708d00ee7e09872d4da46c6e2343c37fabf5c13aa4b0e5429950
-updated: 2018-06-20T12:51:03.854552-04:00
+hash: 60a9766c691bd393b7e9362d41b255053460051de0b7bce592cb5b4f58d0e6e5
+updated: 2018-06-21T14:56:59.799608-04:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -149,6 +149,8 @@ imports:
   version: f1f1a805ed361a0e078bb537e4ea78cd37dcf065
   subpackages:
   - codec
+- name: github.com/vburenin/nsync
+  version: 9a75d1c80410815ac45d65fc01ccabac9c98dd4a
 - name: github.com/xenolf/lego
   version: 5dfe609afb1ebe9da97c9846d97a55415e5a5ccd
   subpackages:
