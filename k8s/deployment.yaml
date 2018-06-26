@@ -16,7 +16,8 @@ spec:
       serviceAccountName: kube-cert-manager
       containers:
         - name: kube-cert-manager
-          image: ctriv/kube-cert-manager:build-4
+          image: liquidweb/kube-cert-manager:ParallelProcessing
+          imagePullPolicy: Always
           args:
             - "-data-dir=/var/lib/cert-manager"
             - "-acme-url=https://acme-staging.api.letsencrypt.org/directory"
@@ -32,9 +33,13 @@ spec:
             - "-default-email=techdev-mwc@liquidweb.com"
             # If you set a default provider, you can omit the field/annotation from Certificates/Ingresses
             - "-default-provider=http"
+            # Number of parallel jobs to run at once. Default is 4 workers.
+            #- "-workers=8"
           volumeMounts:
             - name:  data-dir-vol
               mountPath: /var/lib/cert-manager
+      imagePullSecrets:
+        - name: regcred
       volumes:
         - name: data-dir-vol
           persistentVolumeClaim:

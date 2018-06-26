@@ -55,3 +55,4 @@ to be managed by the certificate manager has changed, from the `enabled` annotat
 * [Certificate Resources](docs/certificate-resources.md)
 * [Challenge Providers](docs/providers.md)
 * [Building Container Image with AWS CodeBuild](codebuild/README.md)
+* [Set up the kube-cert-manager with minikube](docs/deploy-with-minikube.md)

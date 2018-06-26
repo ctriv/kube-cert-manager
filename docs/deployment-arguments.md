@@ -19,6 +19,8 @@ you set various arguments, including important arguments like the ACME URL.
     #- "-default-email=me@example.com"
     # If you set a default provider, you can omit the field/annotation from Certificates/Ingresses
     #- "-default-provider=googlecloud"
+    # Number of parallel jobs to run at once. Default is 4 workers.
+    #- "-workers=8"
 ```
 
 ## Required Arguments
@@ -34,6 +36,7 @@ you set various arguments, including important arguments like the ACME URL.
 - `-class` - Class label value for Ingress resources managed by this certificate manager, defaults to `default`
 - `-default-provider` - Default handler to handle ACME challenges, used if not specified in a resource annotation
 - `-default-email` - Default email address for ACME registrations, used if not specified in a resource annotation
+- `-workers` - Number of parallel jobs to run at once for processing certificates, default is 4 workers.
 
 ## Obscure Arguments
 
