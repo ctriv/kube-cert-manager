@@ -407,6 +407,8 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		acmeClientMutex *sync.Mutex
 	)
 
+	log.Printf("[%s] Starting processing run (maint: %v)", cert.FQName(), forMaint)
+
 	gotlock := p.locks.TryLock(cert.FQName())
 	if !gotlock {
 		log.Printf("%s is currently being worked on, skipping...", cert.FQName())
@@ -431,6 +433,10 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	s, err := p.k8s.getSecret(namespace, p.secretName(cert))
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while fetching certificate acme data for domain %v", cert.Spec.Domain)
+	}
+
+	if s != nil && !forMaint && cert.Status.Provisioned == "" {
+		return p.NoteCertError(cert, err, "Duplicate cert request for secret %s/%s", namespace, p.secretName(cert))
 	}
 
 	altNames := normalizeHostnames(cert.Spec.AltNames)
