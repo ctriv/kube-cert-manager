@@ -407,8 +407,6 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		acmeClientMutex *sync.Mutex
 	)
 
-	log.Printf("[%s] Starting processing run (maint: %v)", cert.FQName(), forMaint)
-
 	gotlock := p.locks.TryLock(cert.FQName())
 	if !gotlock {
 		log.Printf("%s is currently being worked on, skipping...", cert.FQName())
@@ -435,9 +433,10 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		return p.NoteCertError(cert, err, "Error while fetching certificate acme data for domain %v", cert.Spec.Domain)
 	}
 
-	if s != nil && !forMaint && cert.Status.Provisioned == "" {
-		return p.NoteCertError(cert, err, "Duplicate cert request for secret %s/%s", namespace, p.secretName(cert))
-	}
+	// Once MWX is updated this can be turned on.
+	// if s != nil && !forMaint && cert.Status.Provisioned == "" {
+	// 	return p.NoteCertError(cert, err, "Duplicate cert request for secret %s/%s", namespace, p.secretName(cert))
+	// }
 
 	altNames := normalizeHostnames(cert.Spec.AltNames)
 	storedAltNames, err := p.getStoredAltNames(cert)
@@ -467,6 +466,19 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 
 		// If certificate expires after now + p.renewBeforeDays, don't renew
 		if parsedCert.NotAfter.After(time.Now().Add(time.Hour * time.Duration(24*p.renewBeforeDays))) {
+			// if we've got dup request for already created secret, just return that we're done.
+			// once MWX is updated, this can be replaced with the failure logic above.
+			if cert.Status.Provisioned == "" {
+				log.Printf("[%s] Setting status to reflect the existance of the secret", cert.FQName())
+				created, _ := parsedCert.NotBefore.MarshalText()
+				expires, _ := parsedCert.NotAfter.MarshalText()
+
+				p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
+					Provisioned: "true",
+					CreatedDate: string(created),
+					ExpiresDate: string(expires),
+				})
+			}
 			return false, nil
 		}
 
