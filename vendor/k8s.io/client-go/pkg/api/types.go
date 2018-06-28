@@ -2811,7 +2811,7 @@ type ListOptions struct {
 	// - if unset, then the result is returned from remote storage based on quorum-read flag;
 	// - if it's 0, then we simply return what we currently have in cache, no guarantee;
 	// - if set to non zero, then the result is as fresh as given rv.
-	ResourceVersion string
+	ResourceVersion string `json:"resourceVersion"`
 	// Timeout for the list/watch call.
 	TimeoutSeconds *int64
 }
