@@ -409,12 +409,14 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 
 	gotlock := p.locks.TryLock(cert.FQName())
 	if !gotlock {
-		log.Printf("%s is currently being worked on, skipping...", cert.FQName())
+		log.Printf("[%s] Cert is currently being worked on, skipping...", cert.FQName())
 		return false, nil
 	}
 	defer p.locks.Unlock(cert.FQName())
 
-	log.Printf("[%s] Starting work", cert.FQName())
+	if !forMaint {
+		log.Printf("[%s] Starting work", cert.FQName())
+	}
 
 	namespace := certificateNamespace(cert)
 
