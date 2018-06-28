@@ -414,6 +414,8 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	}
 	defer p.locks.Unlock(cert.FQName())
 
+	log.Printf("[%s] Starting work", cert.FQName())
+
 	namespace := certificateNamespace(cert)
 
 	if cert.Status.Provisioned == "false" {
