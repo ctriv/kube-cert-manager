@@ -1,7 +1,7 @@
 # Deploy kube-cert-manager with minikube Guide
 
-This guild will walk you through deploying the Kubernetes Certificate Manager on your local box using miniKube.
-This guild also assumes that you have docker already installed, VM software like virtualBox, and GO. GO version 1.10 was
+This guide will walk you through deploying the Kubernetes Certificate Manager on your local box using miniKube.
+This guide also assumes that you have docker already installed, VM software like virtualBox, and GO. GO version 1.10 was
 used in this guide.
 
 ## High Level Tasks
