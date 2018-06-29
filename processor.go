@@ -421,7 +421,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	namespace := certificateNamespace(cert)
 
 	if cert.Status.Provisioned == "false" {
-		p.deleteFailedCertIfNeeded(cert, namespace)
+		// p.deleteFailedCertIfNeeded(cert, namespace)
 		return true, nil
 	}
 
