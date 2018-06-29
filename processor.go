@@ -460,7 +460,8 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		// Decode cert
 		pemBlock, _ := pem.Decode(acmeCert.Cert)
 		if pemBlock == nil {
-			return p.NoteCertError(cert, err, "Got nil back when decoding x509 encoded certificate for existing domain %v", cert.Spec.Domain)
+			pemError := errors.New("Cannot continue")
+			return p.NoteCertError(cert, pemError, "Got nil back when decoding x509 encoded certificate for existing domain %v", cert.Spec.Domain)
 		}
 
 		parsedCert, err := x509.ParseCertificate(pemBlock.Bytes)
