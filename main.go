@@ -35,6 +35,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/boltdb/bolt"
+	"github.com/liquidweb/kube-cert-manager/internal/k8s"
+	"github.com/liquidweb/kube-cert-manager/internal/processor"
 )
 
 type listFlag []string
@@ -137,8 +139,8 @@ func main() {
 		func(scheme *runtime.Scheme) error {
 			scheme.AddKnownTypes(
 				groupVersion,
-				&Certificate{},
-				&CertificateList{},
+				&k8s.Certificate{},
+				&k8s.CertificateList{},
 				&api.ListOptions{},
 				&api.DeleteOptions{},
 			)
@@ -161,22 +163,35 @@ func main() {
 	}
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays, workers)
+	p := processor.NewCertProcessor(
+		k8sClient,
+		certClient,
+		acmeURL,
+		certSecretPrefix,
+		certNamespace,
+		tagPrefix,
+		namespaces,
+		defaultProvider,
+		defaultEmail,
+		db,
+		renewBeforeDays,
+		workers,
+	)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}
 	doneChan := make(chan struct{})
 
-	if len(p.namespaces) == 0 {
+	if len(p.Namespaces) == 0 {
 		wg.Add(1)
-		go p.watchKubernetesEvents(
+		go p.WatchKubernetesEvents(
 			v1.NamespaceAll,
 			&wg,
 			doneChan)
 	} else {
-		for _, namespace := range p.namespaces {
+		for _, namespace := range p.Namespaces {
 			wg.Add(1)
-			go p.watchKubernetesEvents(
+			go p.WatchKubernetesEvents(
 				namespace,
 				&wg,
 				doneChan,
@@ -184,7 +199,7 @@ func main() {
 		}
 	}
 	wg.Add(1)
-	go p.maintenance(time.Second*time.Duration(syncInterval), &wg, doneChan)
+	go p.Maintenance(time.Second*time.Duration(syncInterval), &wg, doneChan)
 
 	wg.Add(1)
 	go p.HTTPServer("5002", &wg, doneChan)

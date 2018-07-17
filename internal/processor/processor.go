@@ -10,7 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package processor
 
 import (
 	"crypto/rand"
@@ -26,6 +26,7 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/gammazero/workerpool"
+	"github.com/liquidweb/kube-cert-manager/internal/k8s"
 	"github.com/pkg/errors"
 	"github.com/vburenin/nsync"
 	"github.com/xenolf/lego/acme"
@@ -55,12 +56,12 @@ type CertProcessor struct {
 	certSecretPrefix string
 	certNamespace    string
 	tagPrefix        string
-	namespaces       []string
+	Namespaces       []string
 	defaultProvider  string
 	defaultEmail     string
 	db               *bolt.DB
 	httpProvider     *httpRouterProvider
-	k8s              K8sClient
+	k8s              k8s.K8sClient
 	renewBeforeDays  int
 	wp               *workerpool.WorkerPool
 	maintWp          *workerpool.WorkerPool
@@ -69,7 +70,7 @@ type CertProcessor struct {
 
 // NewCertProcessor creates and populates a CertProcessor
 func NewCertProcessor(
-	k8s *kubernetes.Clientset,
+	kubeclient *kubernetes.Clientset,
 	certClient *rest.RESTClient,
 	acmeURL string,
 	certSecretPrefix string,
@@ -82,12 +83,12 @@ func NewCertProcessor(
 	renewBeforeDays int,
 	workers int) *CertProcessor {
 	return &CertProcessor{
-		k8s:              K8sClient{c: k8s, certClient: certClient},
+		k8s:              k8s.NewK8sClient(kubeclient, certClient),
 		acmeURL:          acmeURL,
 		certSecretPrefix: certSecretPrefix,
 		certNamespace:    certNamespace,
 		tagPrefix:        tagPrefix,
-		namespaces:       namespaces,
+		Namespaces:       namespaces,
 		defaultProvider:  defaultProvider,
 		defaultEmail:     defaultEmail,
 		db:               db,
@@ -224,7 +225,7 @@ func (p *CertProcessor) gcSecrets(doneChan <-chan struct{}) error {
 			defer wg.Done()
 			// need to replace to to use an annotation to mark the secret as from us
 			log.Printf("Deleting unused secret %s in namespace %s", copy.Name, copy.Namespace)
-			if err := p.k8s.deleteSecret(copy.Namespace, copy.Name); err != nil {
+			if err := p.k8s.DeleteSecret(copy.Namespace, copy.Name); err != nil {
 				log.Printf("Error deleting secret %s/%s: %v", copy.Namespace, copy.Name, err)
 			}
 		})
@@ -248,15 +249,15 @@ func (p *CertProcessor) gcSecrets(doneChan <-chan struct{}) error {
 
 func (p *CertProcessor) getSecrets() ([]v1.Secret, error) {
 	var secrets []v1.Secret
-	if len(p.namespaces) == 0 {
+	if len(p.Namespaces) == 0 {
 		var err error
-		secrets, err = p.k8s.getSecrets(v1.NamespaceAll)
+		secrets, err = p.k8s.GetSecrets(v1.NamespaceAll)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error while fetching secret list")
 		}
 	} else {
-		for _, namespace := range p.namespaces {
-			s, err := p.k8s.getSecrets(namespace)
+		for _, namespace := range p.Namespaces {
+			s, err := p.k8s.GetSecrets(namespace)
 			if err != nil {
 				return nil, errors.Wrap(err, "Error while fetching secret list")
 			}
@@ -266,17 +267,17 @@ func (p *CertProcessor) getSecrets() ([]v1.Secret, error) {
 	return secrets, nil
 }
 
-func (p *CertProcessor) getCertificates() ([]Certificate, error) {
-	var certificates []Certificate
-	if len(p.namespaces) == 0 {
+func (p *CertProcessor) getCertificates() ([]k8s.Certificate, error) {
+	var certificates []k8s.Certificate
+	if len(p.Namespaces) == 0 {
 		var err error
-		certificates, err = p.k8s.getCertificates(v1.NamespaceAll)
+		certificates, err = p.k8s.GetCertificates(v1.NamespaceAll)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error while fetching certificate list")
 		}
 	} else {
-		for _, namespace := range p.namespaces {
-			certs, err := p.k8s.getCertificates(namespace)
+		for _, namespace := range p.Namespaces {
+			certs, err := p.k8s.GetCertificates(namespace)
 			if err != nil {
 				return nil, errors.Wrap(err, "Error while fetching certificate list")
 			}
@@ -286,14 +287,14 @@ func (p *CertProcessor) getCertificates() ([]Certificate, error) {
 	return certificates, nil
 }
 
-func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGroup, doneChan <-chan struct{}) {
+func (p *CertProcessor) WatchKubernetesEvents(namespace string, wg *sync.WaitGroup, doneChan <-chan struct{}) {
 	if namespace == v1.NamespaceAll {
 		log.Printf("Watching certificates in all namespaces")
 	} else {
 		log.Printf("Watching certificates in namespace %s", namespace)
 	}
 
-	certEvents := p.k8s.monitorCertificateEvents(namespace, doneChan)
+	certEvents := p.k8s.MonitorCertificateEvents(namespace, doneChan)
 	for {
 		select {
 		case event := <-certEvents:
@@ -312,7 +313,7 @@ func (p *CertProcessor) watchKubernetesEvents(namespace string, wg *sync.WaitGro
 	}
 }
 
-func (p *CertProcessor) maintenance(syncInterval time.Duration, wg *sync.WaitGroup, doneChan <-chan struct{}) {
+func (p *CertProcessor) Maintenance(syncInterval time.Duration, wg *sync.WaitGroup, doneChan <-chan struct{}) {
 	for {
 		select {
 		case <-time.After(syncInterval):
@@ -331,7 +332,7 @@ func (p *CertProcessor) maintenance(syncInterval time.Duration, wg *sync.WaitGro
 	}
 }
 
-func (p *CertProcessor) processCertificateEvent(c CertificateEvent) error {
+func (p *CertProcessor) processCertificateEvent(c k8s.CertificateEvent) error {
 	switch c.Type {
 	case "ADDED", "MODIFIED":
 		_, err := p.processCertificate(c.Object, false)
@@ -340,7 +341,7 @@ func (p *CertProcessor) processCertificateEvent(c CertificateEvent) error {
 	return nil
 }
 
-func (p *CertProcessor) secretName(cert Certificate) string {
+func (p *CertProcessor) secretName(cert k8s.Certificate) string {
 	if cert.Spec.SecretName != "" {
 		return cert.Spec.SecretName
 	}
@@ -362,7 +363,8 @@ func normalizeHostnames(hostnames []string) []string {
 	return arr
 }
 
-func (p *CertProcessor) getStoredAltNames(cert Certificate) ([]string, error) {
+// TODO - Rewrite this to parse the cert out of the secret.
+func (p *CertProcessor) getStoredAltNames(cert k8s.Certificate) ([]string, error) {
 	var altNamesRaw []byte
 	err := p.db.View(func(tx *bolt.Tx) error {
 		altNamesRaw = tx.Bucket([]byte("domain-altnames")).Get([]byte(cert.Spec.Domain))
@@ -398,7 +400,7 @@ func equalAltNames(a, b []string) bool {
 // processCertificate creates or renews the corresponding secret
 // processCertificate will create new ACME users if necessary, and complete ACME challenges
 // processCertificate caches ACME user and certificate information in boltdb for reuse
-func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (bool, error) {
+func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) (bool, error) {
 	var (
 		acmeUserInfo    ACMEUserData
 		acmeCertDetails ACMECertDetails
@@ -432,7 +434,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	}
 
 	// Fetch current certificate data from k8s
-	s, err := p.k8s.getSecret(namespace, p.secretName(cert))
+	s, err := p.k8s.GetSecret(namespace, p.secretName(cert))
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while fetching certificate acme data for domain %v", cert.Spec.Domain)
 	}
@@ -478,7 +480,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 				created, _ := parsedCert.NotBefore.MarshalText()
 				expires, _ := parsedCert.NotAfter.MarshalText()
 
-				p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
+				p.k8s.UpdateCertStatus(namespace, cert.Metadata.Name, k8s.CertificateStatus{
 					Provisioned: "true",
 					CreatedDate: string(created),
 					ExpiresDate: string(expires),
@@ -646,7 +648,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	}
 
 	// Save the k8s secret
-	if err := p.k8s.saveSecret(namespace, s, isUpdate); err != nil {
+	if err := p.k8s.SaveSecret(namespace, s, isUpdate); err != nil {
 		return p.NoteCertError(cert, err, "Error while saving secret for domain %v", cert.Spec.Domain)
 	}
 
@@ -654,7 +656,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	if isUpdate {
 		msg = "Updated certificate"
 	}
-	p.k8s.createEvent(v1.Event{
+	p.k8s.CreateEvent(v1.Event{
 		ObjectMeta: v1.ObjectMeta{
 			Namespace: namespace,
 		},
@@ -674,7 +676,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	now, _ := time.Now().UTC().MarshalText()
 	exp, _ := acmeCert.ExpiresDate().MarshalText()
 
-	p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
+	p.k8s.UpdateCertStatus(namespace, cert.Metadata.Name, k8s.CertificateStatus{
 		Provisioned: "true",
 		CreatedDate: string(now),
 		ExpiresDate: string(exp),
@@ -683,21 +685,21 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	return true, nil
 }
 
-func (p *CertProcessor) NoteCertError(cert Certificate, err error, format string, args ...interface{}) (bool, error) {
+func (p *CertProcessor) NoteCertError(cert k8s.Certificate, err error, format string, args ...interface{}) (bool, error) {
 	namespace := certificateNamespace(cert)
-	wrapped_err := errors.Wrapf(err, format, args)
+	wrappedErr := errors.Wrapf(err, format, args)
 	now, _ := time.Now().UTC().MarshalText()
 
-	p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
+	p.k8s.UpdateCertStatus(namespace, cert.Metadata.Name, k8s.CertificateStatus{
 		Provisioned: "false",
 		ErrorDate:   string(now),
-		ErrorMsg:    wrapped_err.Error(),
+		ErrorMsg:    wrappedErr.Error(),
 	})
 
-	return false, wrapped_err
+	return false, wrappedErr
 }
 
-func certificateNamespace(c Certificate) string {
+func certificateNamespace(c k8s.Certificate) string {
 	if c.Metadata.Namespace != "" {
 		return c.Metadata.Namespace
 	}
@@ -711,13 +713,35 @@ func valueOrDefault(a, b string) string {
 	return b
 }
 
-func (p *CertProcessor) deleteFailedCertIfNeeded(c Certificate, namespace string) {
+func (p *CertProcessor) deleteFailedCertIfNeeded(c k8s.Certificate, namespace string) {
 	cutoff := c.Metadata.CreationTimestamp.Time.UTC().AddDate(0, 0, 7)
 
 	if cutoff.Before(time.Now().UTC()) {
-		err := p.k8s.deleteCertificate(c, namespace)
+		err := p.k8s.DeleteCertificate(c, namespace)
 		if err != nil {
 			log.Printf("Error deleting cert %s with error %s", c.Metadata.Name, err)
 		}
 	}
+}
+
+func getDomainFromLabel(s *v1.Secret, tagPrefix string) string {
+	domain := s.Labels[addTagPrefix(tagPrefix, "domain")]
+	if domain == "" {
+		// deprecated plain "domain" label
+		// check for it in case people have the plain label in secrets when upgrading
+		// will be updated to the prefixed label when the Secret is next updated
+		domain = s.Labels["domain"]
+	}
+	return domain
+}
+
+func addTagPrefix(prefix, tag string) string {
+	if prefix == "" {
+		return tag
+	} else if strings.HasSuffix(prefix, ".") {
+		// Support the deprecated "stable.liquidweb.com/kcm." prefix
+		return prefix + tag
+	}
+
+	return prefix + "/" + tag
 }

@@ -9,7 +9,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package k8s
 
 import (
 	"encoding/json"
@@ -17,7 +17,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/pkg/api"
@@ -30,7 +29,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-func (k K8sClient) createEvent(ev v1.Event) {
+func (k K8sClient) CreateEvent(ev v1.Event) {
 	now := unversioned.Now()
 	ev.Name = fmt.Sprintf("%s.%x", ev.InvolvedObject.Name, now.UnixNano())
 	if ev.Kind == "" {
@@ -55,12 +54,12 @@ func (k K8sClient) createEvent(ev v1.Event) {
 	}
 }
 
-func (k K8sClient) updateCertStatus(namespace string, name string, status CertificateStatus) {
+func (k K8sClient) UpdateCertStatus(namespace string, name string, status CertificateStatus) {
 	update := make(map[string]CertificateStatus)
 
 	update["status"] = status
 
-	patch_err := k._doCertPatch(namespace, name, update)
+	patch_err := k.doCertPatch(namespace, name, update)
 
 	if patch_err != nil {
 		log.Printf("ERROR updating status: %v\n", patch_err)
@@ -69,7 +68,7 @@ func (k K8sClient) updateCertStatus(namespace string, name string, status Certif
 	}
 }
 
-func (k K8sClient) _doCertPatch(namespace string, name string, obj interface{}) error {
+func (k K8sClient) doCertPatch(namespace string, name string, obj interface{}) error {
 	raw_patch, json_error := json.Marshal(obj)
 
 	if json_error != nil {
@@ -87,7 +86,7 @@ func (k K8sClient) _doCertPatch(namespace string, name string, obj interface{}) 
 	return patch_err
 }
 
-func (k K8sClient) getSecret(namespace string, key string) (*v1.Secret, error) {
+func (k K8sClient) GetSecret(namespace string, key string) (*v1.Secret, error) {
 	secret, err := k.c.Core().Secrets(namespace).Get(key)
 	if err != nil {
 		switch kerr := err.(type) {
@@ -103,7 +102,7 @@ func (k K8sClient) getSecret(namespace string, key string) (*v1.Secret, error) {
 	return secret, nil
 }
 
-func (k K8sClient) saveSecret(namespace string, secret *v1.Secret, isUpdate bool) error {
+func (k K8sClient) SaveSecret(namespace string, secret *v1.Secret, isUpdate bool) error {
 	if secret.Name == "" {
 		return errors.New("Secret name must be specified in metadata")
 	}
@@ -117,11 +116,11 @@ func (k K8sClient) saveSecret(namespace string, secret *v1.Secret, isUpdate bool
 	}
 }
 
-func (k K8sClient) deleteSecret(namespace string, key string) error {
+func (k K8sClient) DeleteSecret(namespace string, key string) error {
 	return k.c.Secrets(namespace).Delete(key, nil)
 }
 
-func (k K8sClient) deleteCertificate(c Certificate, namespace string) error {
+func (k K8sClient) DeleteCertificate(c Certificate, namespace string) error {
 	log.Printf("About to delete certificate %s in namespace %s ", c.Metadata.Name, namespace)
 	deleteError := k.certClient.Delete().
 		Namespace(namespace).
@@ -130,7 +129,7 @@ func (k K8sClient) deleteCertificate(c Certificate, namespace string) error {
 	return deleteError
 }
 
-func (k K8sClient) getSecrets(namespace string) ([]v1.Secret, error) {
+func (k K8sClient) GetSecrets(namespace string) ([]v1.Secret, error) {
 	listOpts := v1.ListOptions{}
 	listOpts.LabelSelector = "creator=kube-cert-manager"
 
@@ -141,7 +140,7 @@ func (k K8sClient) getSecrets(namespace string) ([]v1.Secret, error) {
 	return list.Items, nil
 }
 
-func (k K8sClient) getCertificates(namespace string) ([]Certificate, error) {
+func (k K8sClient) GetCertificates(namespace string) ([]Certificate, error) {
 	rl := flowcontrol.NewTokenBucketRateLimiter(0.2, 3)
 	for {
 		rl.Accept()
@@ -182,7 +181,7 @@ func newListWatchFromClient(c cache.Getter, resource string, namespace string) *
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}
 }
 
-func (k K8sClient) monitorCertificateEvents(namespace string, done <-chan struct{}) <-chan CertificateEvent {
+func (k K8sClient) MonitorCertificateEvents(namespace string, done <-chan struct{}) <-chan CertificateEvent {
 	events := make(chan CertificateEvent)
 
 	evFunc := func(evType watch.EventType, obj interface{}) {
@@ -243,26 +242,4 @@ func addURLArgument(urlString string, key string, value string) (string, error) 
 	q.Set(key, value)
 	u.RawQuery = q.Encode()
 	return u.String(), nil
-}
-
-func getDomainFromLabel(s *v1.Secret, tagPrefix string) string {
-	domain := s.Labels[addTagPrefix(tagPrefix, "domain")]
-	if domain == "" {
-		// deprecated plain "domain" label
-		// check for it in case people have the plain label in secrets when upgrading
-		// will be updated to the prefixed label when the Secret is next updated
-		domain = s.Labels["domain"]
-	}
-	return domain
-}
-
-func addTagPrefix(prefix, tag string) string {
-	if prefix == "" {
-		return tag
-	} else if strings.HasSuffix(prefix, ".") {
-		// Support the deprecated "stable.liquidweb.com/kcm." prefix
-		return prefix + tag
-	}
-
-	return prefix + "/" + tag
 }
