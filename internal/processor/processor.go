@@ -26,6 +26,9 @@ import (
 
 	"github.com/boltdb/bolt"
 	"github.com/gammazero/workerpool"
+	"github.com/gorilla/mux"
+	"github.com/liquidweb/kube-cert-manager/internal/ca/globalsign"
+	"github.com/liquidweb/kube-cert-manager/internal/cert"
 	"github.com/liquidweb/kube-cert-manager/internal/k8s"
 	"github.com/pkg/errors"
 	"github.com/vburenin/nsync"
@@ -60,12 +63,18 @@ type CertProcessor struct {
 	defaultProvider  string
 	defaultEmail     string
 	db               *bolt.DB
-	httpProvider     *httpRouterProvider
 	k8s              k8s.K8sClient
 	renewBeforeDays  int
 	wp               *workerpool.WorkerPool
 	maintWp          *workerpool.WorkerPool
 	locks            *nsync.NamedMutex
+	CAs              map[string]certificateAuthority
+}
+
+type certificateAuthority interface {
+	ProvisionCert(*k8s.Certificate) (*cert.Bundle, error)
+	RenewCert(*k8s.Certificate, *cert.Bundle) (*cert.Bundle, error)
+	SetupRoute(*mux.Router)
 }
 
 // NewCertProcessor creates and populates a CertProcessor
@@ -93,10 +102,13 @@ func NewCertProcessor(
 		defaultEmail:     defaultEmail,
 		db:               db,
 		renewBeforeDays:  renewBeforeDays,
-		httpProvider:     newHttpRouterProvider(),
 		wp:               workerpool.New(workers),
 		maintWp:          workerpool.New(workers),
 		locks:            nsync.NewNamedMutex(),
+		CAs: map[string]certificateAuthority{
+			"letsencrypt": acme.NewAcmeCertAuthority(db, acmeURL),
+			"globalsign:": globalsign.NewGlobalsignCertAuthority(db, globalSignURL),
+		},
 	}
 }
 
