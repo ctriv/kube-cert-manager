@@ -1,8 +1,11 @@
 package k8s
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"strings"
 
+	"github.com/liquidweb/kube-cert-manager/internal/util"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/meta"
@@ -110,4 +113,19 @@ type CertificateSpec struct {
 	Email      string   `json:"email"`
 	SecretName string   `json:"secretName"`
 	AltNames   []string `json:"altNames"`
+}
+
+func (c *Certificate) Checksum() []byte {
+	h := sha256.New()
+
+	lower := strings.ToLower(c.Spec.Domain)
+
+	h.Write([]byte(lower))
+
+	names := util.NormalizedAltNames(c.Spec.AltNames)
+	for _, name := range names {
+		h.Write([]byte(name))
+	}
+
+	return h.Sum(nil)
 }

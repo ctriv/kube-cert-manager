@@ -436,7 +436,7 @@ func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) 
 	// Fetch current certificate data from k8s
 	s, err := p.k8s.GetSecret(namespace, p.secretName(cert))
 	if err != nil {
-		return p.NoteCertError(cert, err, "Error while fetching certificate acme data for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while fetching certificate secret data for domain %v", cert.Spec.Domain)
 	}
 
 	// Once MWX is updated this can be turned on.
@@ -444,41 +444,18 @@ func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) 
 	// 	return p.NoteCertError(cert, err, "Duplicate cert request for secret %s/%s", namespace, p.secretName(cert))
 	// }
 
-	altNames := normalizeHostnames(cert.Spec.AltNames)
-	storedAltNames, err := p.getStoredAltNames(cert)
-	if err != nil {
-		return false, errors.Wrap(err, "Error while getting stored alternative names")
-	}
-
-	sameAltNames := equalAltNames(altNames, storedAltNames)
-
 	// If a cert exists, and altNames are correct check its expiry and expected altNames
-	if s != nil && getDomainFromLabel(s, p.tagPrefix) == cert.Spec.Domain && sameAltNames {
-		acmeCert, err = NewACMECertDataFromSecret(s, p.tagPrefix)
-		if err != nil {
-			return p.NoteCertError(cert, err, "Error while decoding acme certificate from secret for existing domain %v", cert.Spec.Domain)
-		}
-
-		// Decode cert
-		pemBlock, _ := pem.Decode(acmeCert.Cert)
-		if pemBlock == nil {
-			pemError := errors.New("Cannot continue")
-			return p.NoteCertError(cert, pemError, "Got nil back when decoding x509 encoded certificate for existing domain %v", cert.Spec.Domain)
-		}
-
-		parsedCert, err := x509.ParseCertificate(pemBlock.Bytes)
-		if err != nil {
-			return p.NoteCertError(cert, err, "Error while parsing x509 encoded certificate for existing domain %v", cert.Spec.Domain)
-		}
+	if s != nil {
+		bundle, err := NewBundleFromSecret(s)
 
 		// If certificate expires after now + p.renewBeforeDays, don't renew
-		if parsedCert.NotAfter.After(time.Now().Add(time.Hour * time.Duration(24*p.renewBeforeDays))) {
+		if bundle.SatisfiesCert(cert) && !bundle.ExpiringWithin(p.renewBeforeDays) {
 			// if we've got dup request for already created secret, just return that we're done.
 			// once MWX is updated, this can be replaced with the failure logic above.
 			if cert.Status.Provisioned == "" {
 				log.Printf("[%s] Setting status to reflect the existance of the secret", cert.FQName())
-				created, _ := parsedCert.NotBefore.MarshalText()
-				expires, _ := parsedCert.NotAfter.MarshalText()
+				created, _ := bundle.StartDate().MarshalText()
+				expires, _ := bundle.ExpiresDate().MarshalText()
 
 				p.k8s.UpdateCertStatus(namespace, cert.Metadata.Name, k8s.CertificateStatus{
 					Provisioned: "true",
