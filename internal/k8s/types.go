@@ -109,7 +109,8 @@ func (cl *CertificateList) UnmarshalJSON(data []byte) error {
 
 type CertificateSpec struct {
 	Domain     string   `json:"domain"`
-	Provider   string   `json:"provider"`
+	Challange  string   `json:"challange"`
+	CA         string   `json:"ca"`
 	Email      string   `json:"email"`
 	SecretName string   `json:"secretName"`
 	AltNames   []string `json:"altNames"`
@@ -128,4 +129,8 @@ func (c *Certificate) Checksum() []byte {
 	}
 
 	return h.Sum(nil)
+}
+
+func (c *Certificate) HasSANs() bool {
+	return len(c.Spec.AltNames) > 0
 }

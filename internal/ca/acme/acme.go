@@ -15,8 +15,8 @@ import (
 	"crypto/x509"
 
 	"github.com/boltdb/bolt"
-	"liquidweb.com/kube-cert-manager/internal/cert"
-	"liquidweb.com/kube-cert-manager/internal/k8s"
+	"github.com/liquidweb/kube-cert-manager/internal/cert"
+	"github.com/liquidweb/kube-cert-manager/internal/k8s"
 )
 
 type certAuthority struct {

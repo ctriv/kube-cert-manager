@@ -27,27 +27,12 @@ import (
 	"github.com/boltdb/bolt"
 	"github.com/gammazero/workerpool"
 	"github.com/gorilla/mux"
+	"github.com/liquidweb/kube-cert-manager/internal/ca/acme"
 	"github.com/liquidweb/kube-cert-manager/internal/ca/globalsign"
 	"github.com/liquidweb/kube-cert-manager/internal/cert"
 	"github.com/liquidweb/kube-cert-manager/internal/k8s"
 	"github.com/pkg/errors"
 	"github.com/vburenin/nsync"
-	"github.com/xenolf/lego/acme"
-	"github.com/xenolf/lego/providers/dns/cloudflare"
-	"github.com/xenolf/lego/providers/dns/digitalocean"
-	"github.com/xenolf/lego/providers/dns/dnsimple"
-	"github.com/xenolf/lego/providers/dns/dnsmadeeasy"
-	"github.com/xenolf/lego/providers/dns/dnspod"
-	"github.com/xenolf/lego/providers/dns/dyn"
-	"github.com/xenolf/lego/providers/dns/gandi"
-	"github.com/xenolf/lego/providers/dns/googlecloud"
-	"github.com/xenolf/lego/providers/dns/linode"
-	"github.com/xenolf/lego/providers/dns/namecheap"
-	"github.com/xenolf/lego/providers/dns/ovh"
-	"github.com/xenolf/lego/providers/dns/pdns"
-	"github.com/xenolf/lego/providers/dns/rfc2136"
-	"github.com/xenolf/lego/providers/dns/route53"
-	"github.com/xenolf/lego/providers/dns/vultr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
@@ -82,6 +67,7 @@ func NewCertProcessor(
 	kubeclient *kubernetes.Clientset,
 	certClient *rest.RESTClient,
 	acmeURL string,
+	globalSignURL string,
 	certSecretPrefix string,
 	certNamespace string,
 	tagPrefix string,
@@ -109,66 +95,6 @@ func NewCertProcessor(
 			"letsencrypt": acme.NewAcmeCertAuthority(db, acmeURL),
 			"globalsign:": globalsign.NewGlobalsignCertAuthority(db, globalSignURL),
 		},
-	}
-}
-
-func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acme.Client, *sync.Mutex, error) {
-	acmeClient, err := acme.NewClient(p.acmeURL, acmeUser, acme.RSA2048)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "Error while generating acme client")
-	}
-
-	initDNSProvider := func(p acme.ChallengeProvider, err error) (*acme.Client, *sync.Mutex, error) {
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Error while initializing challenge provider %v", provider)
-		}
-
-		if err := acmeClient.SetChallengeProvider(acme.DNS01, p); err != nil {
-			return nil, nil, errors.Wrapf(err, "Error while setting challenge provider %v for dns-01", provider)
-		}
-
-		acmeClient.ExcludeChallenges([]acme.Challenge{acme.HTTP01, acme.TLSSNI01})
-		return acmeClient, nil, nil
-	}
-
-	switch provider {
-	case "http":
-		acmeClient.SetHTTPAddress(":5002")
-		acmeClient.SetChallengeProvider(acme.HTTP01, p.httpProvider)
-		acmeClient.ExcludeChallenges([]acme.Challenge{acme.DNS01, acme.TLSSNI01})
-		return acmeClient, nil, nil
-	case "cloudflare":
-		return initDNSProvider(cloudflare.NewDNSProvider())
-	case "digitalocean":
-		return initDNSProvider(digitalocean.NewDNSProvider())
-	case "dnsimple":
-		return initDNSProvider(dnsimple.NewDNSProvider())
-	case "dnsmadeeasy":
-		return initDNSProvider(dnsmadeeasy.NewDNSProvider())
-	case "dnspod":
-		return initDNSProvider(dnspod.NewDNSProvider())
-	case "dyn":
-		return initDNSProvider(dyn.NewDNSProvider())
-	case "gandi":
-		return initDNSProvider(gandi.NewDNSProvider())
-	case "googlecloud":
-		return initDNSProvider(googlecloud.NewDNSProvider())
-	case "linode":
-		return initDNSProvider(linode.NewDNSProvider())
-	case "namecheap":
-		return initDNSProvider(namecheap.NewDNSProvider())
-	case "ovh":
-		return initDNSProvider(ovh.NewDNSProvider())
-	case "pdns":
-		return initDNSProvider(pdns.NewDNSProvider())
-	case "rfc2136":
-		return initDNSProvider(rfc2136.NewDNSProvider())
-	case "route53":
-		return initDNSProvider(route53.NewDNSProvider())
-	case "vultr":
-		return initDNSProvider(vultr.NewDNSProvider())
-	default:
-		return nil, nil, errors.Errorf("Unknown provider %v", provider)
 	}
 }
 
