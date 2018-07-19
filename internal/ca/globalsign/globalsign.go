@@ -13,8 +13,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
-	"github.com/liquidweb/kube-cert-manager/internal/cert"
 	"github.com/liquidweb/kube-cert-manager/internal/k8s"
+	"github.com/liquidweb/kube-cert-manager/internal/tls"
 	"github.com/liquidweb/kube-cert-manager/internal/util"
 )
 
@@ -34,24 +34,24 @@ func NewGlobalsignCertAuthority(db *bolt.DB, url string) *certAuthority {
 	}
 }
 
-func (ca *certAuthority) ProvisionCert(certreq *k8s.Certificate) (*cert.Bundle, error) {
+func (ca *certAuthority) ProvisionCert(cert *k8s.Certificate) (*tls.Bundle, error) {
 
 	// need to figure out how to fire up the goroutine stuff to make this async
-	switch certreq.Spec.Challange {
+	switch cert.Spec.Challange {
 	case "http":
-		return ca.handleHttpProvisioning(certreq)
+		return ca.handleHttpProvisioning(cert)
 	case "dns":
-		return ca.handleDnsProvisioning(certreq)
+		return ca.handleDnsProvisioning(cert)
 	default:
-		return nil, errors.Errorf("Unsupported challange type: %s", certreq.Spec.Challange)
+		return nil, errors.Errorf("Unsupported challange type: %s", cert.Spec.Challange)
 	}
 }
 
-func (ca *certAuthority) RenewCert(certreq *k8s.Certificate, certDetails *cert.Bundle) (*cert.Bundle, error) {
+func (ca *certAuthority) RenewCert(cert *k8s.Certificate, certDetails *tls.Bundle) (*tls.Bundle, error) {
 	return nil, nil
 }
 
-func (ca *certAuthority) handleHttpProvisioning(certreq *k8s.Certificate) (*cert.Bundle, error) {
+func (ca *certAuthority) handleHttpProvisioning(cert *k8s.Certificate) (*tls.Bundle, error) {
 	// basic flow here is
 	// 1. Create a CSR
 	// 2. Create the request body to send to GS
@@ -59,42 +59,42 @@ func (ca *certAuthority) handleHttpProvisioning(certreq *k8s.Certificate) (*cert
 	// 4. Use the info from that request to prepare to the http challange.
 	// 5. Once the challange is ready, send a URLVerificationForIssue request
 	// 6. build a bundle and return it.
-	privateKey, csr, err := ca.generateCSR(certreq)
+	privateKey, csr, err := ca.generateCSR(cert)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not build keypair for %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Could not build keypair for %v", cert.Spec.Domain)
 	}
 
-	initReq := ca.buildUrlVerificationRequest(certreq, csr)
+	initReq := ca.buildUrlVerificationRequest(cert, csr)
 	orderRes, err := ca.client.URLVerification(initReq)
 
 	if err != nil {
-		return nil, errors.Wrapf(err, "Could not start cert order with the CA for the domain %v", certreq.Spec.Domain)
+		return nil, errors.Wrapf(err, "Could not start cert order with the CA for the domain %v", cert.Spec.Domain)
 	}
 
 	if orderRes.Response.OrderResponseHeader.SuccessCode == -1 {
 		return nil, ca.errFromOrderResponse(orderRes.Response.OrderResponseHeader)
 	}
 
-	rawcert, err := ca.handleHttpChallange(certreq, orderRes)
+	rawcert, err := ca.handleHttpChallange(cert, orderRes)
 
 	if err != nil {
 		return nil, err
 	}
 
-	bundle := &cert.Bundle{
-		DomainName: certreq.Spec.Domain,
-		AltNames:   certreq.Spec.AltNames,
+	bundle := &tls.Bundle{
+		DomainName: cert.Spec.Domain,
+		AltNames:   cert.Spec.AltNames,
 		PrivateKey: privateKey,
 		Cert:       rawcert,
-		CAExtras: map[string]string{
-			"order_id": orderRes.Response.OrderID,
-		},
+		// CAExtras: map[string]string{
+		// 	"order_id": orderRes.Response.OrderID,
+		// },
 	}
 
 	return bundle, nil
 }
 
-func (ca *certAuthority) handleHttpChallange(certreq *k8s.Certificate, orderRes *URLVerificationResponse) ([]byte, error) {
+func (ca *certAuthority) handleHttpChallange(cert *k8s.Certificate, orderRes *URLVerificationResponse) ([]byte, error) {
 	return []byte("write me"), nil
 }
 
@@ -108,7 +108,7 @@ func (ca *certAuthority) errFromOrderResponse(res *OrderResponseHeader) error {
 	return errors.New(strings.Join(errorList, "\n"))
 }
 
-func (ca *certAuthority) buildUrlVerificationRequest(certreq *k8s.Certificate, csr []byte) *URLVerification {
+func (ca *certAuthority) buildUrlVerificationRequest(cert *k8s.Certificate, csr []byte) *URLVerification {
 	initReq := &URLVerification{
 		Request: &QbV1UrlVerificationRequest{
 			OrderRequestParameter: &OrderRequestParameter{
@@ -123,13 +123,13 @@ func (ca *certAuthority) buildUrlVerificationRequest(certreq *k8s.Certificate, c
 		},
 	}
 
-	if strings.HasPrefix(certreq.Spec.Domain, "*.") {
+	if strings.HasPrefix(cert.Spec.Domain, "*.") {
 		initReq.Request.OrderRequestParameter.BaseOption = "wildcard"
 	}
 
-	if certreq.HasSANs() {
+	if cert.HasSANs() {
 		entries := []*SANEntry{}
-		for _, domain := range util.NormalizedAltNames(certreq.Spec.AltNames) {
+		for _, domain := range util.NormalizedAltNames(cert.Spec.AltNames) {
 			entries = append(entries, &SANEntry{
 				SubjectAltName: domain,
 				SANOptionType:  "2",
@@ -160,11 +160,11 @@ func (ca *certAuthority) defaultContactInfo() *ContactInfo {
 	}
 }
 
-func (ca *certAuthority) handleDnsProvisioning(certreq *k8s.Certificate) (*cert.Bundle, error) {
+func (ca *certAuthority) handleDnsProvisioning(cert *k8s.Certificate) (*tls.Bundle, error) {
 	return nil, errors.New("DNS Challange is supported but not yet implemented")
 }
 
-func (ca *certAuthority) generateCSR(certreq *k8s.Certificate) ([]byte, []byte, error) {
+func (ca *certAuthority) generateCSR(cert *k8s.Certificate) ([]byte, []byte, error) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "Could not generate private key.")
@@ -172,12 +172,12 @@ func (ca *certAuthority) generateCSR(certreq *k8s.Certificate) ([]byte, []byte, 
 
 	template := x509.CertificateRequest{
 		Subject: pkix.Name{
-			CommonName: certreq.Spec.Domain,
+			CommonName: cert.Spec.Domain,
 		},
 	}
 
-	if certreq.HasSANs() {
-		template.DNSNames = util.NormalizedAltNames(certreq.Spec.AltNames)
+	if cert.HasSANs() {
+		template.DNSNames = util.NormalizedAltNames(cert.Spec.AltNames)
 	}
 
 	csr, err := x509.CreateCertificateRequest(rand.Reader, &template, privateKey)

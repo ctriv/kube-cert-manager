@@ -1,4 +1,4 @@
-package cert
+package tls
 
 import (
 	"bytes"
@@ -19,37 +19,49 @@ import (
 // TLS cert.  It contains the cert and private key, along with metadata such as
 // the the domain name, alternate names, and any extra data the CA needs.
 type Bundle struct {
-	DomainName string
-	AltNames   []string
-	Cert       []byte
-	PrivateKey []byte
-	CAExtras   map[string]string
-	parsedCert *x509.Certificate
+	DomainName  string
+	AltNames    []string
+	Cert        []byte
+	PrivateKey  []byte
+	StartDate   time.Time
+	ExpiresDate time.Time
 }
 
 // NewBundleFromSecret takes a kubernetes secret struct and returns a Bundle with
 // containing the same logical data.
 func NewBundleFromSecret(s *v1.Secret) (*Bundle, error) {
-	var ok bool
-	b := new(Bundle)
-
-	b.Cert, ok = s.Data["tls.crt"]
+	cert, ok := s.Data["tls.crt"]
 	if !ok {
 		return nil, errors.Errorf("Could not find key tls.crt in secret %v", s.Name)
 	}
 
-	b.PrivateKey, ok = s.Data["tls.key"]
+	key, ok := s.Data["tls.key"]
 	if !ok {
 		return nil, errors.Errorf("Could not find key tls.key in secret %v", s.Name)
 	}
 
-	_, err := b.ParsedCert()
-	if err != nil {
-		return nil, errors.Wrapf(err, "Could not create bundle for secert %s/%s", s.ObjectMeta.Namespace, s.ObjectMeta.Name)
+	return NewBundle(cert, key)
+}
+
+func NewBundle(cert, key []byte) (*Bundle, error) {
+	b := &Bundle{
+		Cert:       cert,
+		PrivateKey: key,
 	}
 
-	b.DomainName = b.parsedCert.Subject.CommonName
-	b.AltNames = b.parsedCert.DNSNames
+	block, _ := pem.Decode(b.Cert)
+	if block == nil {
+		return nil, errors.New("Cannot pem decode cert")
+	}
+	parsedCert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not parse cert")
+	}
+
+	b.StartDate = parsedCert.NotBefore
+	b.ExpiresDate = parsedCert.NotAfter
+	b.DomainName = parsedCert.Subject.CommonName
+	b.AltNames = parsedCert.DNSNames
 
 	return b, nil
 }
@@ -83,36 +95,6 @@ func (b *Bundle) ToSecret(name string, labels map[string]string) *v1.Secret {
 	}
 }
 
-// ParsedCert returns a x509 Certificate struct.  This is useful for pulling
-// metadata out the cert, such as the subject or expiration date.
-func (b *Bundle) ParsedCert() (*x509.Certificate, error) {
-	if b.parsedCert != nil {
-		return b.parsedCert, nil
-	}
-
-	block, _ := pem.Decode(b.Cert)
-	if block == nil {
-		return nil, errors.New("Cannot pem decode cert")
-	}
-	cert, err := x509.ParseCertificate(block.Bytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not parse cert")
-	}
-
-	b.parsedCert = cert
-
-	return cert, nil
-}
-
-func (b *Bundle) StartDate() time.Time {
-	return b.parsedCert.NotBefore
-}
-
-// ExpiresDate returns the datetime that this cert will expire as a time.Time
-func (b *Bundle) ExpiresDate() time.Time {
-	return b.parsedCert.NotAfter
-}
-
 // ExpiringWithin tells you if a cert is expiring before a certain numbers of
 // days.  Takes a day count as an int and returns a bool.
 //
@@ -122,7 +104,7 @@ func (b *Bundle) ExpiresDate() time.Time {
 //            Renew(Cert)
 //        }
 func (b *Bundle) ExpiringWithin(days int) bool {
-	return b.ExpiresDate().Before(time.Now().Add(time.Hour * time.Duration(24*days)))
+	return b.ExpiresDate.Before(time.Now().Add(time.Hour * time.Duration(24*days)))
 }
 
 // SatisfiesCert takes a k8s.Certificate struct and returns true if the cert
