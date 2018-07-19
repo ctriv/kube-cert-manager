@@ -59,28 +59,27 @@ func main() {
 	var (
 		kubeconfig       string
 		acmeURL          string
+		globalsignURL    string
 		syncInterval     int
-		certSecretPrefix string
 		dataDir          string
-		certNamespace    string
-		tagPrefix        string
 		namespaces       []string
-		defaultProvider  string
+		defaultChallenge string
+		defaultCA        string
 		defaultEmail     string
-		renewBeforeDays  int
-		workers          int
+
+		renewBeforeDays int
+		workers         int
 	)
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
 	flag.StringVar(&acmeURL, "acme-url", "", "The URL to the acme directory to use")
-	flag.StringVar(&certSecretPrefix, "cert-secret-prefix", "", "The prefix to use for certificate secrets")
+	flag.StringVar(&globalsignURL, "globalsign-url", "", "The URL to the globalsign endpoint to use")
 	flag.IntVar(&syncInterval, "sync-interval", 300, "Sync interval in seconds")
 	flag.StringVar(&dataDir, "data-dir", "/var/lib/cert-manager", "Data directory path")
-	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
-	flag.StringVar(&tagPrefix, "tag-prefix", "stable.liquidweb.com/kcm.", "Prefix added to labels and annotations")
 	flag.Var((*listFlag)(&namespaces), "namespaces", "Comma-separated list of namespaces to monitor. The empty list means all namespaces")
-	flag.StringVar(&defaultProvider, "default-provider", "", "Default handler to handle ACME challenges")
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
+	flag.StringVar(&defaultCA, "default-ca", "letsencrypt", "Default certificate authority.")
+	flag.StringVar(&defaultChallenge, "default-challenge", "http", "Default challenge type (http or dns)")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
 	flag.IntVar(&workers, "workers", 4, "Number of parallel jobs to run at once")
 	flag.Parse()
@@ -167,11 +166,10 @@ func main() {
 		k8sClient,
 		certClient,
 		acmeURL,
-		certSecretPrefix,
-		certNamespace,
-		tagPrefix,
+		globalsignURL,
 		namespaces,
-		defaultProvider,
+		defaultCA,
+		defaultChallenge,
 		defaultEmail,
 		db,
 		renewBeforeDays,

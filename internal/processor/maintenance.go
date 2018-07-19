@@ -80,7 +80,7 @@ func (p *CertProcessor) gcSecrets(doneChan <-chan struct{}) error {
 	}
 	usedSecrets := map[string]bool{}
 	for _, cert := range certs {
-		usedSecrets[cert.Metadata.Namespace+" "+p.secretName(cert)] = true
+		usedSecrets[cert.Metadata.Namespace+" "+cert.Spec.SecretName] = true
 	}
 
 	var wg sync.WaitGroup

@@ -35,8 +35,6 @@ func NewGlobalsignCertAuthority(db *bolt.DB, url string) *certAuthority {
 }
 
 func (ca *certAuthority) ProvisionCert(cert *k8s.Certificate) (*tls.Bundle, error) {
-
-	// need to figure out how to fire up the goroutine stuff to make this async
 	switch cert.Spec.Challange {
 	case "http":
 		return ca.handleHttpProvisioning(cert)
@@ -56,7 +54,7 @@ func (ca *certAuthority) handleHttpProvisioning(cert *k8s.Certificate) (*tls.Bun
 	// 1. Create a CSR
 	// 2. Create the request body to send to GS
 	// 3. Fire off a URLVerification request
-	// 4. Use the info from that request to prepare to the http challange.
+	// 4. Use the info from that request to prepare for the http challange.
 	// 5. Once the challange is ready, send a URLVerificationForIssue request
 	// 6. build a bundle and return it.
 	privateKey, csr, err := ca.generateCSR(cert)

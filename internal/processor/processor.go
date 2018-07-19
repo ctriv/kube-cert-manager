@@ -38,7 +38,8 @@ type CertProcessor struct {
 	certNamespace    string
 	tagPrefix        string
 	Namespaces       []string
-	defaultProvider  string
+	defaultChallange string
+	defaultCA        string
 	defaultEmail     string
 	db               *bolt.DB
 	k8s              k8s.K8sClient
@@ -61,23 +62,19 @@ func NewCertProcessor(
 	certClient *rest.RESTClient,
 	acmeURL string,
 	globalSignURL string,
-	certSecretPrefix string,
-	certNamespace string,
-	tagPrefix string,
 	namespaces []string,
-	defaultProvider string,
+	defaultCA string,
+	defaultChallange string,
 	defaultEmail string,
 	db *bolt.DB,
 	renewBeforeDays int,
 	workers int) *CertProcessor {
-	return &CertProcessor{
+	p := &CertProcessor{
 		k8s:              k8s.NewK8sClient(kubeclient, certClient),
 		acmeURL:          acmeURL,
-		certSecretPrefix: certSecretPrefix,
-		certNamespace:    certNamespace,
-		tagPrefix:        tagPrefix,
 		Namespaces:       namespaces,
-		defaultProvider:  defaultProvider,
+		defaultChallange: defaultChallange,
+		defaultCA:        defaultCA,
 		defaultEmail:     defaultEmail,
 		db:               db,
 		renewBeforeDays:  renewBeforeDays,
@@ -86,16 +83,14 @@ func NewCertProcessor(
 		locks:            nsync.NewNamedMutex(),
 		CAs: map[string]certificateAuthority{
 			"letsencrypt": acme.NewAcmeCertAuthority(db, acmeURL),
-			"globalsign:": globalsign.NewGlobalsignCertAuthority(db, globalSignURL),
 		},
 	}
-}
 
-func (p *CertProcessor) secretName(cert k8s.Certificate) string {
-	if cert.Spec.SecretName != "" {
-		return cert.Spec.SecretName
+	if globalSignURL != "" {
+		p.CAs["globalsign"] = globalsign.NewGlobalsignCertAuthority(db, globalSignURL)
 	}
-	return p.certSecretPrefix + cert.Spec.Domain
+
+	return p
 }
 
 // processCertificate creates or renews the corresponding secret
@@ -128,16 +123,26 @@ func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) 
 		return false, nil
 	}
 
+	if cert.Spec.SecretName == "" {
+		newerr := errors.New("Cannot process cert")
+		return p.NoteCertError(cert, newerr, "spec.secretName is not set.")
+	}
+
+	err := p.fillInCertDefaults(cert)
+	if err != nil {
+		return p.NoteCertError(cert, err, "could not fill out defaults.")
+	}
+
 	// need to think about what happens when the ca for a cert changes...
 	ca, err := p.caForCert(cert)
 	if err != nil {
-		return p.NoteCertError(cert, err, "Could not get a CA for %s", cert.FQName())
+		return p.NoteCertError(cert, err, "Could not get a CA")
 	}
 
-	namespace := certificateNamespace(cert)
+	namespace := cert.Metadata.Namespace
 
 	// Fetch current certificate data from k8s
-	s, err := p.k8s.GetSecret(namespace, p.secretName(cert))
+	s, err := p.k8s.GetSecret(namespace, cert.Spec.SecretName)
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while fetching certificate secret data for domain %v", cert.Spec.Domain)
 	}
@@ -150,7 +155,7 @@ func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) 
 	if s != nil {
 		bundle, err = tls.NewBundleFromSecret(s)
 		if err != nil {
-			return p.NoteCertError(cert, err, "Could not parse existing cert in secret for %s", cert.FQName())
+			return p.NoteCertError(cert, err, "Could not parse existing cert in secret %s", cert.Spec.SecretName)
 		}
 
 		// If certificate expires after now + p.renewBeforeDays, don't renew
@@ -174,18 +179,18 @@ func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) 
 		log.Printf("[%v] Expiry for cert is in less than %v days (%v), attempting renewal", cert.Spec.Domain, p.renewBeforeDays, bundle.ExpiresDate.String())
 		bundle, err = ca.RenewCert(&cert, bundle)
 		if err != nil {
-			return p.NoteCertError(cert, err, "Error while renewing certificate for %v", cert.FQName())
+			return p.NoteCertError(cert, err, "Error while renewing certificate")
 		}
 	} else {
 		bundle, err = ca.ProvisionCert(&cert)
 		if err != nil {
-			return p.NoteCertError(cert, err, "Error while provisioning new certificate for %v", cert.FQName())
+			return p.NoteCertError(cert, err, "Error while provisioning new certificate")
 		}
 	}
 
 	// Convert cert data to k8s secret
 	isUpdate := s != nil
-	s = bundle.ToSecret(p.secretName(cert), cert.Metadata.Labels)
+	s = bundle.ToSecret(cert.Spec.SecretName, cert.Metadata.Labels)
 
 	if isUpdate {
 		log.Printf("Updating secret %v in namespace %v for domain %v", s.Name, namespace, cert.Spec.Domain)
@@ -232,11 +237,10 @@ func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) 
 }
 
 func (p *CertProcessor) NoteCertError(cert k8s.Certificate, err error, format string, args ...interface{}) (bool, error) {
-	namespace := certificateNamespace(cert)
 	wrappedErr := errors.Wrapf(err, format, args)
 	now, _ := time.Now().UTC().MarshalText()
 
-	p.k8s.UpdateCertStatus(namespace, cert.Metadata.Name, k8s.CertificateStatus{
+	p.k8s.UpdateCertStatus(cert.Metadata.Namespace, cert.Metadata.Name, k8s.CertificateStatus{
 		Provisioned: "false",
 		ErrorDate:   string(now),
 		ErrorMsg:    wrappedErr.Error(),
@@ -255,20 +259,6 @@ func (p *CertProcessor) caForCert(certreq k8s.Certificate) (certificateAuthority
 	return ca, nil
 }
 
-func certificateNamespace(c k8s.Certificate) string {
-	if c.Metadata.Namespace != "" {
-		return c.Metadata.Namespace
-	}
-	return "default"
-}
-
-func valueOrDefault(a, b string) string {
-	if a != "" {
-		return a
-	}
-	return b
-}
-
 func (p *CertProcessor) deleteFailedCertIfNeeded(c k8s.Certificate, namespace string) {
 	cutoff := c.Metadata.CreationTimestamp.Time.UTC().AddDate(0, 0, 7)
 
@@ -278,4 +268,29 @@ func (p *CertProcessor) deleteFailedCertIfNeeded(c k8s.Certificate, namespace st
 			log.Printf("Error deleting cert %s with error %s", c.Metadata.Name, err)
 		}
 	}
+}
+
+func (p *CertProcessor) fillInCertDefaults(cert k8s.Certificate) error {
+	needUpdate := false
+
+	if cert.Spec.CA == "" {
+		cert.Spec.CA = p.defaultCA
+		needUpdate = true
+	}
+
+	if cert.Spec.Challange == "" {
+		cert.Spec.Challange = p.defaultChallange
+		needUpdate = true
+	}
+
+	if cert.Spec.Email == "" {
+		cert.Spec.Email = p.defaultEmail
+		needUpdate = true
+	}
+
+	if needUpdate {
+		return p.k8s.UpdateCertSpec(cert.Metadata.Namespace, cert.Metadata.Name, cert.Spec)
+	}
+
+	return nil
 }

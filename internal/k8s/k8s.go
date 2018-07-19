@@ -16,7 +16,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 
 	"github.com/pkg/errors"
 	"k8s.io/client-go/pkg/api"
@@ -66,6 +65,21 @@ func (k K8sClient) UpdateCertStatus(namespace string, name string, status Certif
 	} else {
 		log.Printf("UPDATED status for %s/%s: %#v\n", namespace, name, status)
 	}
+}
+
+func (k K8sClient) UpdateCertSpec(namespace string, name string, spec CertificateSpec) error {
+	update := make(map[string]CertificateSpec)
+
+	update["spec"] = spec
+
+	err := k.doCertPatch(namespace, name, update)
+
+	if err != nil {
+		return errors.Wrapf(err, "ERROR updating spec for %s/%s: %#v\n", namespace, name, spec)
+	}
+
+	log.Printf("UPDATED spec for %s/%s: %#v\n", namespace, name, spec)
+	return nil
 }
 
 func (k K8sClient) doCertPatch(namespace string, name string, obj interface{}) error {
@@ -219,27 +233,4 @@ func (k K8sClient) MonitorCertificateEvents(namespace string, done <-chan struct
 	}()
 
 	return events
-}
-
-func namespacedEndpoint(endpoint, namespace string) string {
-	return fmt.Sprintf(endpoint, namespace)
-}
-
-func namespacedAllCertEndpoint(endpoint, certNamespace string) string {
-	return fmt.Sprintf(endpoint, certNamespace)
-}
-
-func namespacedCertEndpoint(endpoint, certNamespace, namespace string) string {
-	return fmt.Sprintf(endpoint, certNamespace, namespace)
-}
-
-func addURLArgument(urlString string, key string, value string) (string, error) {
-	u, err := url.Parse(urlString)
-	if err != nil {
-		return "", errors.Wrapf(err, "Error parsing URL: %v", err)
-	}
-	q := u.Query()
-	q.Set(key, value)
-	u.RawQuery = q.Encode()
-	return u.String(), nil
 }
