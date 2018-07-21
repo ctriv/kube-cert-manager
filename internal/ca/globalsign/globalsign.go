@@ -10,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/boltdb/bolt"
-	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 
 	"github.com/liquidweb/kube-cert-manager/internal/k8s"
@@ -19,18 +18,16 @@ import (
 )
 
 type certAuthority struct {
-	db     *bolt.DB
-	lock   *sync.Mutex
-	url    string
-	client *ServerSSLV1
+	url        string
+	client     *ServerSSLV1
+	challanges *sync.Map
 }
 
 func NewGlobalsignCertAuthority(db *bolt.DB, url string) *certAuthority {
 	return &certAuthority{
-		db:     db,
-		url:    url,
-		lock:   &sync.Mutex{},
-		client: NewServerSSLV1(url, true, &BasicAuth{}), // TODO get auth figured out
+		url:        url,
+		client:     NewServerSSLV1(url, true, &BasicAuth{}), // TODO get auth figured out
+		challanges: new(sync.Map),
 	}
 }
 
@@ -79,14 +76,14 @@ func (ca *certAuthority) handleHttpProvisioning(cert *k8s.Certificate) (*tls.Bun
 		return nil, err
 	}
 
-	bundle := &tls.Bundle{
-		DomainName: cert.Spec.Domain,
-		AltNames:   cert.Spec.AltNames,
-		PrivateKey: privateKey,
-		Cert:       rawcert,
-		// CAExtras: map[string]string{
-		// 	"order_id": orderRes.Response.OrderID,
-		// },
+	bundle, err := tls.NewBundle(rawcert, privateKey)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse newly provisioned cert from globalsign")
+	}
+
+	bundle.CADetails = map[string]string{
+		"orderId": orderRes.Response.OrderID,
 	}
 
 	return bundle, nil
@@ -159,7 +156,7 @@ func (ca *certAuthority) defaultContactInfo() *ContactInfo {
 }
 
 func (ca *certAuthority) handleDnsProvisioning(cert *k8s.Certificate) (*tls.Bundle, error) {
-	return nil, errors.New("DNS Challange is supported but not yet implemented")
+	return nil, errors.New("DNS Challange is not implemented")
 }
 
 func (ca *certAuthority) generateCSR(cert *k8s.Certificate) ([]byte, []byte, error) {
@@ -192,8 +189,4 @@ func (ca *certAuthority) generateCSR(cert *k8s.Certificate) ([]byte, []byte, err
 	csrBlock := pem.EncodeToMemory(&pemCSR)
 
 	return privateKeyBlock, csrBlock, nil
-}
-
-func (ca *certAuthority) SetupRoute(router *mux.Router) {
-
 }

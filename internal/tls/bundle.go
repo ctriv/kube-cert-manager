@@ -25,6 +25,7 @@ type Bundle struct {
 	PrivateKey  []byte
 	StartDate   time.Time
 	ExpiresDate time.Time
+	CADetails   map[string]string
 }
 
 // NewBundleFromSecret takes a kubernetes secret struct and returns a Bundle with

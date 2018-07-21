@@ -1,7 +1,10 @@
 package acme
 
 import (
+	"log"
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -22,7 +25,18 @@ func (h *httpRouterProvider) SetupRoute(router *mux.Router) {
 		w.Header().Add("Content-Type", "text/plain")
 
 		vars := mux.Vars(r)
-		keyAuth, ok := h.challanges.Load(keyFor(r.Host, vars["id"]))
+		host := r.Host
+		if strings.Contains(host, ":") {
+			var err error
+			host, _, err = net.SplitHostPort(r.Host)
+			if err != nil {
+				log.Printf("Couldn't split %s into host and port: %v", r.Host, err)
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte("Error"))
+				return
+			}
+		}
+		keyAuth, ok := h.challanges.Load(keyFor(host, vars["id"]))
 
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)

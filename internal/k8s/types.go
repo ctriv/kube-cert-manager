@@ -46,11 +46,12 @@ type Certificate struct {
 }
 
 type CertificateStatus struct {
-	Provisioned string `json:"provisioned,omitempty"`
-	CreatedDate string `json:"created,omitempty"`
-	ExpiresDate string `json:"expires,omitempty"`
-	ErrorMsg    string `json:"error_msg,omitempty"`
-	ErrorDate   string `json:"error_date,omitempty"`
+	Provisioned string            `json:"provisioned,omitempty"`
+	CreatedDate string            `json:"created,omitempty"`
+	ExpiresDate string            `json:"expires,omitempty"`
+	ErrorMsg    string            `json:"error_msg,omitempty"`
+	ErrorDate   string            `json:"error_date,omitempty"`
+	CADetails   map[string]string `json:"caDetails,omitempty"`
 }
 
 func (c *Certificate) GetObjectKind() unversioned.ObjectKind {
