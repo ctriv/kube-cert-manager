@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"fmt"
 	"strings"
 	"sync"
 
@@ -34,9 +35,9 @@ func NewGlobalsignCertAuthority(db *bolt.DB, url string) *certAuthority {
 func (ca *certAuthority) ProvisionCert(cert *k8s.Certificate) (*tls.Bundle, error) {
 	switch cert.Spec.Challange {
 	case "http":
-		return ca.handleHttpProvisioning(cert)
+		return ca.handleHTTPProvisioning(cert)
 	case "dns":
-		return ca.handleDnsProvisioning(cert)
+		return ca.handleDNSProvisioning(cert)
 	default:
 		return nil, errors.Errorf("Unsupported challange type: %s", cert.Spec.Challange)
 	}
@@ -46,7 +47,7 @@ func (ca *certAuthority) RenewCert(cert *k8s.Certificate, certDetails *tls.Bundl
 	return nil, nil
 }
 
-func (ca *certAuthority) handleHttpProvisioning(cert *k8s.Certificate) (*tls.Bundle, error) {
+func (ca *certAuthority) handleHTTPProvisioning(cert *k8s.Certificate) (*tls.Bundle, error) {
 	// basic flow here is
 	// 1. Create a CSR
 	// 2. Create the request body to send to GS
@@ -70,7 +71,7 @@ func (ca *certAuthority) handleHttpProvisioning(cert *k8s.Certificate) (*tls.Bun
 		return nil, ca.errFromOrderResponse(orderRes.Response.OrderResponseHeader)
 	}
 
-	rawcert, err := ca.handleHttpChallange(cert, orderRes)
+	rawcert, err := ca.handleHTTPChallange(cert, orderRes)
 
 	if err != nil {
 		return nil, err
@@ -89,8 +90,71 @@ func (ca *certAuthority) handleHttpProvisioning(cert *k8s.Certificate) (*tls.Bun
 	return bundle, nil
 }
 
-func (ca *certAuthority) handleHttpChallange(cert *k8s.Certificate, orderRes *URLVerificationResponse) ([]byte, error) {
-	return []byte("write me"), nil
+func (ca *certAuthority) handleHTTPChallange(cert *k8s.Certificate, orderRes *URLVerificationResponse) ([]byte, error) {
+	domain := strings.TrimPrefix(cert.Spec.Domain, "*.")
+	var chalDomain string
+	for _, possible := range orderRes.Response.VerificationURLList.VerificationURL {
+		if possible == domain {
+			chalDomain = domain
+		}
+	}
+
+	if chalDomain == "" {
+		return []byte{}, fmt.Errorf("Unable to find matching challange domain in list returned from globalsign: %s",
+			strings.Join(orderRes.Response.VerificationURLList.VerificationURL, ", "),
+		)
+	}
+
+	ca.addHTTPChallange(chalDomain, orderRes.Response.MetaTag)
+	defer ca.removeHTTPChallange(chalDomain)
+
+	request := &URLVerificationForIssue{
+		Request: &QbV1UrlVerificationForIssueRequest{
+			ApproverURL: chalDomain,
+			OrderID:     orderRes.Response.OrderID,
+		},
+	}
+	issueRes, err := ca.client.URLVerificationForIssue(request)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not complete cert order with the CA for the domain %v", cert.Spec.Domain)
+	}
+
+	if issueRes.Response.OrderResponseHeader.SuccessCode == -1 {
+		return nil, ca.errFromOrderResponse(issueRes.Response.OrderResponseHeader)
+	}
+
+	issuedCert, err := ca.buildCertFromFulfillment(issueRes.Response.URLVerificationForIssue.Fulfillment)
+	if err != nil {
+		return nil, errors.Wrap(err, "globalsign returned a non-sensical cert chain")
+	}
+
+	return issuedCert, nil
+
+}
+
+func (ca *certAuthority) buildCertFromFulfillment(f *Fulfillment) ([]byte, error) {
+	// the goal of this method is to contact the intermediate and server certs
+	// together.
+	// basically: $ cat www.example.com.crt bundle.crt > www.example.com.chained.crt
+	server := f.ServerCertificate.X509Cert
+	if server == "" {
+		return []byte{}, errors.New("no x509 server cert returned")
+	}
+
+	var inter string
+
+	for _, caCert := range f.CACertificates.CACertificate {
+		if caCert.CACertType == "Inter" {
+			inter = caCert.CACert
+		}
+	}
+
+	if inter == "" {
+		return []byte(server), nil
+	}
+
+	return []byte(server + inter), nil
 }
 
 func (ca *certAuthority) errFromOrderResponse(res *OrderResponseHeader) error {
@@ -155,7 +219,7 @@ func (ca *certAuthority) defaultContactInfo() *ContactInfo {
 	}
 }
 
-func (ca *certAuthority) handleDnsProvisioning(cert *k8s.Certificate) (*tls.Bundle, error) {
+func (ca *certAuthority) handleDNSProvisioning(cert *k8s.Certificate) (*tls.Bundle, error) {
 	return nil, errors.New("DNS Challange is not implemented")
 }
 

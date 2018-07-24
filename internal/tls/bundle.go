@@ -44,6 +44,8 @@ func NewBundleFromSecret(s *v1.Secret) (*Bundle, error) {
 	return NewBundle(cert, key)
 }
 
+// NewBundle takes a cert and a key as byte slices and returns a bundle
+// containing that cert/key pair.
 func NewBundle(cert, key []byte) (*Bundle, error) {
 	b := &Bundle{
 		Cert:       cert,

@@ -231,6 +231,7 @@ func (p *CertProcessor) processCertificate(cert k8s.Certificate, forMaint bool) 
 		Provisioned: "true",
 		CreatedDate: string(now),
 		ExpiresDate: string(exp),
+		CADetails:   bundle.CADetails,
 	})
 
 	return true, nil
