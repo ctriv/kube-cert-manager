@@ -1,35 +1,11 @@
-hash: 60a9766c691bd393b7e9362d41b255053460051de0b7bce592cb5b4f58d0e6e5
-updated: 2018-06-21T14:56:59.799608-04:00
+hash: 02995c988a8608fd22c6525b523c6702c2e303b8644c78bbe26bfb508eeb4cd6
+updated: 2018-07-25T13:44:29.849213-07:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
   subpackages:
   - compute/metadata
   - internal
-- name: github.com/aws/aws-sdk-go
-  version: 49c3892b61af1d4996292a3025f36e4dfa25eaee
-  subpackages:
-  - aws
-  - aws/awserr
-  - aws/awsutil
-  - aws/client
-  - aws/client/metadata
-  - aws/corehandlers
-  - aws/credentials
-  - aws/credentials/ec2rolecreds
-  - aws/defaults
-  - aws/ec2metadata
-  - aws/request
-  - aws/session
-  - private/endpoints
-  - private/protocol
-  - private/protocol/query
-  - private/protocol/query/queryutil
-  - private/protocol/rest
-  - private/protocol/restxml
-  - private/protocol/xml/xmlutil
-  - private/signer/v4
-  - service/route53
 - name: github.com/blang/semver
   version: 31b736133b98f26d5e078ec9eb591666edfd091f
 - name: github.com/boltdb/bolt
@@ -54,10 +30,6 @@ imports:
   - spew
 - name: github.com/decker502/dnspod-go
   version: f33a2c6040fc2550a631de7b3a53bddccdcd73fb
-- name: github.com/dnsimple/dnsimple-go
-  version: 84b1b693f39ee2d2749fd651148024c014679dbd
-  subpackages:
-  - dnsimple
 - name: github.com/docker/distribution
   version: cd27f179f2c10c5d300e6d09025b538c475b0d51
   subpackages:
@@ -74,8 +46,6 @@ imports:
   version: 064b8cd8bb5d04bd94867948640bc7206c528ac1
 - name: github.com/ghodss/yaml
   version: 73d445a93680fa1a78ae23a5839bad48f32ba1ee
-- name: github.com/go-ini/ini
-  version: c787282c39ac1fc618827141a1f762240def08a3
 - name: github.com/go-openapi/jsonpointer
   version: 46af16f9f7b149af66e5d1bd010e3574dc06de98
 - name: github.com/go-openapi/jsonreference
@@ -95,10 +65,6 @@ imports:
   version: 8616e8ee5e20a1704615e6c8d7afcdac06087a67
   subpackages:
   - proto
-- name: github.com/google/go-querystring
-  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
-  subpackages:
-  - query
 - name: github.com/google/gofuzz
   version: bbcb9da2d746f8bdbd6a936686a0a6067ada0ec5
 - name: github.com/gorilla/context
@@ -109,12 +75,6 @@ imports:
   version: 3ca23474a7c7203e0a0a070fd33508f6efdb9b3d
 - name: github.com/imdario/mergo
   version: 6633656539c1639d9d78127b7d47c622b5d7b6dc
-- name: github.com/JamesClonk/vultr
-  version: 2fd0705ce648e602e6c9c57329a174270a4f6688
-  subpackages:
-  - lib
-- name: github.com/jmespath/go-jmespath
-  version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 - name: github.com/jonboulle/clockwork
   version: 72f9bd7c4e0c2a40055ab3d0f09654f730cce982
 - name: github.com/juju/ratelimit
@@ -127,24 +87,27 @@ imports:
   - jwriter
 - name: github.com/miekg/dns
   version: e4205768578dc90c2669e75a2f8a8bf77e3083a4
-- name: github.com/ovh/go-ovh
-  version: 4b1fea467323b74c5f462f0947f402b428ca0626
-  subpackages:
-  - ovh
 - name: github.com/pborman/uuid
   version: ca53cad383cad2479bbba7f7a1a05797ec1386e4
 - name: github.com/pkg/errors
   version: ff09b135c25aae272398c51a07235b90a75aa4f0
+- name: github.com/pmezard/go-difflib
+  version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
+  subpackages:
+  - difflib
 - name: github.com/PuerkitoBio/purell
   version: 8a290539e2e8629dbc4e6bad948158f790ec31f4
 - name: github.com/PuerkitoBio/urlesc
   version: 5bd2802263f21d8788851d5305584c82a5c75d7e
 - name: github.com/spf13/pflag
   version: 5ccb023bc27df288a957c5e994cd44fd19619465
-- name: github.com/timewasted/linode
-  version: 37e84520dcf74488f67654f9c775b9752c232dc1
+- name: github.com/stretchr/objx
+  version: b8b73a35e9830ae509858c10dec5866b4d5c8bff
+- name: github.com/stretchr/testify
+  version: f35b8ab0b5a2cef36673838d662e249dd9c94686
   subpackages:
-  - dns
+  - assert
+  - mock
 - name: github.com/ugorji/go
   version: f1f1a805ed361a0e078bb537e4ea78cd37dcf065
   subpackages:
@@ -209,13 +172,6 @@ imports:
   - unicode/bidi
   - unicode/norm
   - width
-- name: google.golang.org/api
-  version: 4cbdde7d4ee4bb5f6d6da987a182c3f1dfeb9cd6
-  subpackages:
-  - dns/v1
-  - gensupport
-  - googleapi
-  - googleapi/internal/uritemplates
 - name: google.golang.org/appengine
   version: 4f7eeb5305a4ba1966344836ba4af9996b7b4e05
   subpackages:
@@ -230,8 +186,6 @@ imports:
   - urlfetch
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
-- name: gopkg.in/ini.v1
-  version: 20b96f641a5ea98f2f8619ff4f3e061cff4833bd
 - name: gopkg.in/square/go-jose.v1
   version: aa2e30fdd1fe9dd3394119af66451ae790d50e0d
   subpackages:

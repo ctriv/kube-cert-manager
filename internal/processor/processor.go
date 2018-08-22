@@ -42,18 +42,31 @@ type CertProcessor struct {
 	defaultCA        string
 	defaultEmail     string
 	db               *bolt.DB
-	k8s              k8s.K8sClient
+	k8s              KubeAdapter
 	renewBeforeDays  int
 	wp               *workerpool.WorkerPool
 	maintWp          *workerpool.WorkerPool
 	locks            *nsync.NamedMutex
-	CAs              map[string]certificateAuthority
+	CAs              map[string]CertificateAuthority
 }
 
-type certificateAuthority interface {
+type CertificateAuthority interface {
 	ProvisionCert(*k8s.Certificate) (*tls.Bundle, error)
 	RenewCert(*k8s.Certificate, *tls.Bundle) (*tls.Bundle, error)
 	SetupRoute(*mux.Router)
+}
+
+type KubeAdapter interface {
+	GetSecret(string, string) (*v1.Secret, error)
+	SaveSecret(string, *v1.Secret, bool) error
+	UpdateCertStatus(string, string, k8s.CertificateStatus)
+	UpdateCertSpec(string, string, k8s.CertificateSpec) error
+	CreateEvent(v1.Event)
+	DeleteCertificate(k8s.Certificate, string) error
+	DeleteSecret(string, string) error
+	GetSecrets(string) ([]v1.Secret, error)
+	GetCertificates(string) ([]k8s.Certificate, error)
+	MonitorCertificateEvents(string, <-chan struct{}) <-chan k8s.CertificateEvent
 }
 
 // NewCertProcessor creates and populates a CertProcessor
@@ -81,13 +94,13 @@ func NewCertProcessor(
 		wp:               workerpool.New(workers),
 		maintWp:          workerpool.New(workers),
 		locks:            nsync.NewNamedMutex(),
-		CAs: map[string]certificateAuthority{
+		CAs: map[string]CertificateAuthority{
 			"letsencrypt": acme.NewAcmeCertAuthority(db, acmeURL),
 		},
 	}
 
 	if globalSignURL != "" {
-		p.CAs["globalsign"] = globalsign.NewGlobalsignCertAuthority(db, globalSignURL)
+		p.CAs["globalsign"] = globalsign.NewGlobalsignCertAuthority(globalSignURL)
 	}
 
 	return p
@@ -250,7 +263,7 @@ func (p *CertProcessor) NoteCertError(cert k8s.Certificate, err error, format st
 	return false, wrappedErr
 }
 
-func (p *CertProcessor) caForCert(certreq k8s.Certificate) (certificateAuthority, error) {
+func (p *CertProcessor) caForCert(certreq k8s.Certificate) (CertificateAuthority, error) {
 	ca, ok := p.CAs[certreq.Spec.CA]
 
 	if !ok {

@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/boltdb/bolt"
 	"github.com/pkg/errors"
 
 	"github.com/liquidweb/kube-cert-manager/internal/k8s"
@@ -24,7 +23,7 @@ type certAuthority struct {
 	challanges *sync.Map
 }
 
-func NewGlobalsignCertAuthority(db *bolt.DB, url string) *certAuthority {
+func NewGlobalsignCertAuthority(url string) *certAuthority {
 	return &certAuthority{
 		url:        url,
 		client:     NewServerSSLV1(url, true, &BasicAuth{}), // TODO get auth figured out
