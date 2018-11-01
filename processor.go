@@ -364,10 +364,15 @@ func normalizeHostnames(hostnames []string) []string {
 
 func (p *CertProcessor) getStoredAltNames(cert Certificate) ([]string, error) {
 	var altNamesRaw []byte
-	err := p.db.View(func(tx *bolt.Tx) error {
+	/*
+		Instead of going to bolt to get alt domains you would get it from the postgres domain_altnames table by domain
+		the value should be compatiable with a byte array.
+	*/
+	altNamesRaw, err := getAltNames(cert.Spec.Domain)
+	/*err := p.db.View(func(tx *bolt.Tx) error {
 		altNamesRaw = tx.Bucket([]byte("domain-altnames")).Get([]byte(cert.Spec.Domain))
 		return nil
-	})
+	})*/
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while fetching altnames from database for domain %v", cert.Spec.Domain)
 	}
@@ -493,15 +498,20 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	email := valueOrDefault(cert.Spec.Email, p.defaultEmail)
 
 	// Fetch acme user data and cert details from bolt
+	/*
+		Call the user_info table by email and the cert_details table by domain to get the userInfo and certInfo
+	*/
 	var userInfoRaw, certDetailsRaw []byte
-	err = p.db.View(func(tx *bolt.Tx) error {
+	userInfoRaw, err = getUserInfo(email)
+	certDetailsRaw, err = getCertDeatils(cert.Spec.Domain)
+	/*err = p.db.View(func(tx *bolt.Tx) error {
 		userInfoRaw = tx.Bucket([]byte("user-info")).Get([]byte(email))
 		certDetailsRaw = tx.Bucket([]byte("cert-details")).Get([]byte(cert.Spec.Domain))
 		return nil
-	})
+	})*/
 
 	if err != nil {
-		return p.NoteCertError(cert, err, "Error while running bolt view transaction for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while running database view transaction for domain %v", cert.Spec.Domain)
 	}
 
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
@@ -564,14 +574,18 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		}
 
 		// Save user info to bolt
-		err = p.db.Update(func(tx *bolt.Tx) error {
+		/*
+			Update postgres user_info here by id and email
+		*/
+		err = addUserInfo(email, userInfoRaw)
+		/*err = p.db.Update(func(tx *bolt.Tx) error {
 			key := []byte(email)
 			tx.Bucket([]byte("user-info")).Put(key, userInfoRaw)
 			return nil
-		})
+		})*/
 
 		if err != nil {
-			return p.NoteCertError(cert, err, "Error while saving user data to bolt for domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while saving user data to database for domain %v", cert.Spec.Domain)
 		}
 	}
 
@@ -625,14 +639,19 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	}
 
 	// Save cert details to bolt
-	err = p.db.Update(func(tx *bolt.Tx) error {
+	/*
+		Save to postgres cert and alt domain here
+	*/
+	err = addCertDetails(cert.Spec.Domain, certDetailsRaw)
+	err = addAltNames(cert.Spec.Domain, altNamesRaw)
+	/*err = p.db.Update(func(tx *bolt.Tx) error {
 		key := []byte(cert.Spec.Domain)
 		tx.Bucket([]byte("cert-details")).Put(key, certDetailsRaw)
 		tx.Bucket([]byte("domain-altnames")).Put(key, altNamesRaw)
 		return nil
-	})
+	})*/
 	if err != nil {
-		return p.NoteCertError(cert, err, "Error while saving data to bolt for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while saving data to database for domain %v", cert.Spec.Domain)
 	}
 
 	// Convert cert data to k8s secret

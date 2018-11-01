@@ -86,9 +86,11 @@ func main() {
 	if acmeURL == "" {
 		log.Fatal("The acme-url command line parameter must be specified")
 	}
+	fmt.Println(acmeURL + " This is the current ACME URL ....")
+	addCert("shouldmaketable")
 
 	// Initialize bolt
-	if err := os.MkdirAll(dataDir, 0700); err != nil {
+	/*if err := os.MkdirAll(dataDir, 0700); err != nil {
 		log.Fatalf("Error while creating %v directory: %v", dataDir, err)
 	}
 
@@ -97,6 +99,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error while creating bolt database file at %v: %v", dbPath, err)
 	}
+
+
+		In this for loop it creates the buckets for the bolt db. We would no longer need this as
+		the bucketNames are now going to be the tables in postgres and should be persistent.
 
 	for _, bucketName := range []string{"user-info", "cert-details", "domain-altnames"} {
 		err = db.Update(func(tx *bolt.Tx) error {
@@ -110,7 +116,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error while creating bolt bucket %v: %v", bucketName, err)
 		}
-	}
+	}*/
 
 	log.Println("Starting Kubernetes Certificate Controller...")
 
