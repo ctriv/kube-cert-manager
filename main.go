@@ -14,11 +14,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"path"
 	"strings"
 	"sync"
 	"syscall"
@@ -33,8 +31,6 @@ import (
 	"k8s.io/client-go/pkg/watch/versioned"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/boltdb/bolt"
 )
 
 type listFlag []string
@@ -86,41 +82,11 @@ func main() {
 	if acmeURL == "" {
 		log.Fatal("The acme-url command line parameter must be specified")
 	}
-	fmt.Println(acmeURL + " This is the current ACME URL ....")
-	addCert("shouldmaketable")
-
-	// Initialize bolt
-	/*if err := os.MkdirAll(dataDir, 0700); err != nil {
-		log.Fatalf("Error while creating %v directory: %v", dataDir, err)
-	}
-
-	dbPath := path.Join(dataDir, "data.db")
-	db, err := bolt.Open(dbPath, 0600, nil)
-	if err != nil {
-		log.Fatalf("Error while creating bolt database file at %v: %v", dbPath, err)
-	}
-
-
-		In this for loop it creates the buckets for the bolt db. We would no longer need this as
-		the bucketNames are now going to be the tables in postgres and should be persistent.
-
-	for _, bucketName := range []string{"user-info", "cert-details", "domain-altnames"} {
-		err = db.Update(func(tx *bolt.Tx) error {
-			_, err = tx.CreateBucketIfNotExists([]byte(bucketName))
-			if err != nil {
-				return fmt.Errorf("create bucket: %s", err)
-			}
-			return nil
-		})
-
-		if err != nil {
-			log.Fatalf("Error while creating bolt bucket %v: %v", bucketName, err)
-		}
-	}*/
 
 	log.Println("Starting Kubernetes Certificate Controller...")
 
 	var k8sConfig *rest.Config
+	var err error
 	if kubeconfig == "" {
 		k8sConfig, err = rest.InClusterConfig()
 	} else {
@@ -167,7 +133,7 @@ func main() {
 	}
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays, workers)
+	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, renewBeforeDays, workers)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}

@@ -18,6 +18,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -78,7 +79,6 @@ func NewCertProcessor(
 	namespaces []string,
 	defaultProvider string,
 	defaultEmail string,
-	db *bolt.DB,
 	renewBeforeDays int,
 	workers int) *CertProcessor {
 	return &CertProcessor{
@@ -90,7 +90,6 @@ func NewCertProcessor(
 		namespaces:       namespaces,
 		defaultProvider:  defaultProvider,
 		defaultEmail:     defaultEmail,
-		db:               db,
 		renewBeforeDays:  renewBeforeDays,
 		httpProvider:     newHttpRouterProvider(),
 		wp:               workerpool.New(workers),
@@ -369,19 +368,24 @@ func (p *CertProcessor) getStoredAltNames(cert Certificate) ([]string, error) {
 		the value should be compatiable with a byte array.
 	*/
 	altNamesRaw, err := getAltNames(cert.Spec.Domain)
+	fmt.Println(altNamesRaw)
 	/*err := p.db.View(func(tx *bolt.Tx) error {
 		altNamesRaw = tx.Bucket([]byte("domain-altnames")).Get([]byte(cert.Spec.Domain))
 		return nil
 	})*/
+	if len(altNamesRaw) == 0 {
+		altNamesRaw = nil
+	}
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while fetching altnames from database for domain %v", cert.Spec.Domain)
 	}
 	if altNamesRaw == nil {
 		return nil, nil
 	}
-
+	fmt.Println(altNamesRaw == nil)
 	var altNames []string
 	err = json.Unmarshal(altNamesRaw, &altNames)
+	fmt.Println(err)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while unmarshalling altnames from database for domain %v", cert.Spec.Domain)
 	}
@@ -515,7 +519,9 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	}
 
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
-
+	if len(userInfoRaw) == 0 {
+		userInfoRaw = nil
+	}
 	// Handle user information
 	if userInfoRaw != nil { // Use existing user
 		if err = json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
