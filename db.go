@@ -26,7 +26,6 @@ type UserInfo struct {
 }
 
 func db() (*gorm.DB, error) {
-	fmt.Println("Calling to connect to DATABASE!!!!!")
 	db, err := gorm.Open("postgres", "host=localhost port=5432 user=certmanager dbname=certmanager password=Pass1234 sslmode=disable")
 	if err != nil {
 		fmt.Println(err)
@@ -34,7 +33,6 @@ func db() (*gorm.DB, error) {
 	}
 
 	return db, err
-	//defer db.Close()
 }
 
 /**
