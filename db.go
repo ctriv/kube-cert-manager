@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
+	"log"
 )
 
 type CertDetail struct {
@@ -39,67 +40,63 @@ func db() (*gorm.DB, error) {
 /**
 Get Domain AltNames via domain
 */
-func getAltNames(domain string) (altNames []byte, err error) {
-	fmt.Println("Callng the get AltNames function")
-	fmt.Println(domain)
+func getAltNames(domain string) (altNamesRaw []byte, err error) {
+	log.Printf("Retreving domain alt-names from database for domain (%s)", domain)
+
 	d, err := db()
-	if err != nil {
-		fmt.Println(err)
-	}
+	var altNames DomainAltname
 
 	d.Where(&DomainAltname{Domain: domain}).First(&altNames)
 	defer d.Close()
-	return altNames, err
+
+	altNamesRaw = []byte(altNames.Value)
+	return altNamesRaw, err
 }
 
 /**
 Get User Info via email
 */
-func getUserInfo(email string) (userInfo []byte, err error) {
-	fmt.Println("Calling the get UserInfo function")
-	fmt.Println(email)
-	d, err := db()
-	if err != nil {
-		fmt.Println(err)
-	}
+func getUserInfo(email string) (userInfoRaw []byte, err error) {
+	log.Printf("Retreving user info email (%s) from database", email)
 
-	d.Where(&UserInfo{Email: email}).First(&userInfo)
+	d, err := db()
+	var userInfo UserInfo
+
+	d.Where(&UserInfo{Email: email}).Find(&userInfo)
 	defer d.Close()
-	return userInfo, err
+
+	userInfoRaw = []byte(userInfo.Value)
+	return userInfoRaw, err
 }
 
 /**
 Get Certificate Details via Domain
 */
-func getCertDeatils(domain string) (certDetails []byte, err error) {
-	fmt.Println("Calling the get cert Details function")
-	fmt.Println(domain)
+func getCertDetails(domain string) (certDetailsRaw []byte, err error) {
+	log.Printf("Retreving certificate details from database for domain (%s)", domain)
+
 	d, err := db()
-	if err != nil {
-		fmt.Println(err)
-	}
+	var certDetails CertDetail
 
 	d.Where(&CertDetail{Domain: domain}).First(&certDetails)
 	defer d.Close()
-	return certDetails, err
+
+	certDetailsRaw = []byte(certDetails.Value)
+	return certDetailsRaw, err
 }
 
 /**
 Save User Information key email, value userInfo
 */
 func addUserInfo(email string, userInfo []byte) error {
-	fmt.Println("Calling the add user info function")
-	fmt.Println(email)
+	log.Printf("Saving user info email (%s) to database", email)
 
 	d, err := db()
-	if err != nil {
-		fmt.Println(err)
-	}
-
 	s := string(userInfo)
-	fmt.Println(s)
+
 	d.Create(&UserInfo{Email: email, Value: s})
 	defer d.Close()
+
 	return err
 }
 
@@ -107,17 +104,14 @@ func addUserInfo(email string, userInfo []byte) error {
 Save Certificate Details key domain, value certDetails
 */
 func addCertDetails(domain string, certDetails []byte) error {
-	fmt.Println("Calling the add certDetails function")
-	fmt.Println(domain)
-	d, err := db()
-	if err != nil {
-		fmt.Println(err)
-	}
+	log.Printf("Saving certificate details to database for domain (%s)", domain)
 
+	d, err := db()
 	s := string(certDetails)
-	fmt.Println(s)
+
 	d.Create(&CertDetail{Domain: domain, Value: s})
 	defer d.Close()
+
 	return err
 }
 
@@ -125,16 +119,13 @@ func addCertDetails(domain string, certDetails []byte) error {
 Save Alt Name Details key domain, value altNames
 */
 func addAltNames(domain string, altNames []byte) error {
-	fmt.Println("Calling the add alt name function")
-	fmt.Println(domain)
-	d, err := db()
-	if err != nil {
-		fmt.Println(err)
-	}
+	log.Printf("Saving domain alt-names to database for domain (%s)", domain)
 
+	d, err := db()
 	s := string(altNames)
-	fmt.Println(s)
+
 	d.Create(&DomainAltname{Domain: domain, Value: s})
 	defer d.Close()
+
 	return err
 }

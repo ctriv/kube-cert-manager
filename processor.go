@@ -363,29 +363,20 @@ func normalizeHostnames(hostnames []string) []string {
 
 func (p *CertProcessor) getStoredAltNames(cert Certificate) ([]string, error) {
 	var altNamesRaw []byte
-	/*
-		Instead of going to bolt to get alt domains you would get it from the postgres domain_altnames table by domain
-		the value should be compatiable with a byte array.
-	*/
+
 	altNamesRaw, err := getAltNames(cert.Spec.Domain)
-	fmt.Println(altNamesRaw)
-	/*err := p.db.View(func(tx *bolt.Tx) error {
-		altNamesRaw = tx.Bucket([]byte("domain-altnames")).Get([]byte(cert.Spec.Domain))
-		return nil
-	})*/
-	if len(altNamesRaw) == 0 {
-		altNamesRaw = nil
-	}
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while fetching altnames from database for domain %v", cert.Spec.Domain)
 	}
+	fmt.Println(altNamesRaw == nil)
 	if altNamesRaw == nil {
 		return nil, nil
 	}
-	fmt.Println(altNamesRaw == nil)
+
 	var altNames []string
 	err = json.Unmarshal(altNamesRaw, &altNames)
-	fmt.Println(err)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while unmarshalling altnames from database for domain %v", cert.Spec.Domain)
 	}
@@ -501,27 +492,21 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 
 	email := valueOrDefault(cert.Spec.Email, p.defaultEmail)
 
-	// Fetch acme user data and cert details from bolt
-	/*
-		Call the user_info table by email and the cert_details table by domain to get the userInfo and certInfo
-	*/
 	var userInfoRaw, certDetailsRaw []byte
 	userInfoRaw, err = getUserInfo(email)
-	certDetailsRaw, err = getCertDeatils(cert.Spec.Domain)
-	/*err = p.db.View(func(tx *bolt.Tx) error {
-		userInfoRaw = tx.Bucket([]byte("user-info")).Get([]byte(email))
-		certDetailsRaw = tx.Bucket([]byte("cert-details")).Get([]byte(cert.Spec.Domain))
-		return nil
-	})*/
 
 	if err != nil {
-		return p.NoteCertError(cert, err, "Error while running database view transaction for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while running database view user information transaction for domain %v", cert.Spec.Domain)
+	}
+
+	certDetailsRaw, err = getCertDetails(cert.Spec.Domain)
+
+	if err != nil {
+		return p.NoteCertError(cert, err, "Error while running database view certificate transaction for domain %v", cert.Spec.Domain)
 	}
 
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
-	if len(userInfoRaw) == 0 {
-		userInfoRaw = nil
-	}
+
 	// Handle user information
 	if userInfoRaw != nil { // Use existing user
 		if err = json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
@@ -579,16 +564,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 			return p.NoteCertError(cert, err, "Error while marshalling user info for domain %v", cert.Spec.Domain)
 		}
 
-		// Save user info to bolt
-		/*
-			Update postgres user_info here by id and email
-		*/
 		err = addUserInfo(email, userInfoRaw)
-		/*err = p.db.Update(func(tx *bolt.Tx) error {
-			key := []byte(email)
-			tx.Bucket([]byte("user-info")).Put(key, userInfoRaw)
-			return nil
-		})*/
 
 		if err != nil {
 			return p.NoteCertError(cert, err, "Error while saving user data to database for domain %v", cert.Spec.Domain)
@@ -644,20 +620,16 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		return p.NoteCertError(cert, err, "Error while marshalling altNames for domain %v", cert.Spec.Domain)
 	}
 
-	// Save cert details to bolt
-	/*
-		Save to postgres cert and alt domain here
-	*/
 	err = addCertDetails(cert.Spec.Domain, certDetailsRaw)
-	err = addAltNames(cert.Spec.Domain, altNamesRaw)
-	/*err = p.db.Update(func(tx *bolt.Tx) error {
-		key := []byte(cert.Spec.Domain)
-		tx.Bucket([]byte("cert-details")).Put(key, certDetailsRaw)
-		tx.Bucket([]byte("domain-altnames")).Put(key, altNamesRaw)
-		return nil
-	})*/
+
 	if err != nil {
-		return p.NoteCertError(cert, err, "Error while saving data to database for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while saving certificate data to database for domain %v", cert.Spec.Domain)
+	}
+
+	err = addAltNames(cert.Spec.Domain, altNamesRaw)
+
+	if err != nil {
+		return p.NoteCertError(cert, err, "Error while saving domain alt-names data to database for domain %v", cert.Spec.Domain)
 	}
 
 	// Convert cert data to k8s secret
