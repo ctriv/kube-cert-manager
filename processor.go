@@ -18,7 +18,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"sort"
 	"strings"
@@ -369,8 +368,8 @@ func (p *CertProcessor) getStoredAltNames(cert Certificate) ([]string, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while fetching altnames from database for domain %v", cert.Spec.Domain)
 	}
-	fmt.Println(altNamesRaw == nil)
-	if altNamesRaw == nil {
+
+	if len(altNamesRaw) == 0 {
 		return nil, nil
 	}
 
