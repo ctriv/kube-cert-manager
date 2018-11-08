@@ -114,7 +114,7 @@ func addCertDetails(domain string, certDetails []byte) error {
 }
 
 /**
-Save Alt Name Details key domain, value altNames
+Save Alt Names Details key domain, value altNames
 */
 func addAltNames(domain string, altNames []byte) error {
 	log.Printf("Saving domain alt-names to database for domain (%s)", domain)
@@ -123,6 +123,42 @@ func addAltNames(domain string, altNames []byte) error {
 	s := string(altNames)
 
 	d.Create(&DomainAltname{Domain: domain, Value: s})
+	defer d.Close()
+
+	return err
+}
+
+/**
+Update Alt Names Details key domain, new values altNames
+*/
+func updateAltNames(domain string, altNamesRaw []byte) error {
+	log.Printf("Updating domain alt-names to database for domain (%s)", domain)
+
+	d, err := db()
+	s := string(altNamesRaw)
+	var altNames DomainAltname
+
+	d.Where(&DomainAltname{Domain: domain}).First(&altNames)
+	altNames.Value = s
+	d.Save(&altNames)
+	defer d.Close()
+
+	return err
+}
+
+/**
+Update Certificate Details key domain, new value certDetails
+*/
+func updateCertDetails(domain string, certDetailsRaw []byte) error {
+	log.Printf("Updating domain alt-names to database for domain (%s)", domain)
+
+	d, err := db()
+	s := string(certDetailsRaw)
+	var certDetails CertDetail
+
+	d.Where(&CertDetail{Domain: domain}).First(&certDetails)
+	certDetails.Value = s
+	d.Save(&certDetails)
 	defer d.Close()
 
 	return err

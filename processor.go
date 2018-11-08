@@ -507,7 +507,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
 
 	// Handle user information
-	if userInfoRaw != nil { // Use existing user
+	if len(userInfoRaw) > 0 { // Use existing user
 		if err = json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
 			return p.NoteCertError(cert, err, "Error while unmarshalling user info for %v", cert.Spec.Domain)
 		}
@@ -571,8 +571,9 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	}
 
 	domains := append([]string{cert.Spec.Domain}, altNames...)
+	isRenewal := false
 	// If we have cert details stored with expected altNames, do a renewal, otherwise, obtain from scratch
-	if certDetailsRaw == nil || acmeCert.DomainName == "" || !sameAltNames {
+	if len(certDetailsRaw) == 0 || acmeCert.DomainName == "" || !sameAltNames {
 		acmeCert.DomainName = cert.Spec.Domain
 
 		// Obtain a cert
@@ -606,6 +607,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		acmeCert.Cert = certRes.Certificate
 		acmeCert.PrivateKey = certRes.PrivateKey
 		acmeCertDetails = NewACMECertDetailsFromResource(certRes)
+		isRenewal = true
 	}
 
 	// Serialize acmeCertDetails and acmeUserInfo
@@ -619,13 +621,23 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		return p.NoteCertError(cert, err, "Error while marshalling altNames for domain %v", cert.Spec.Domain)
 	}
 
-	err = addCertDetails(cert.Spec.Domain, certDetailsRaw)
+	//Need to distinguish if this is a new cert or a renewal.
+	if isRenewal {
+		err = updateCertDetails(cert.Spec.Domain, certDetailsRaw)
+	} else {
+		err = addCertDetails(cert.Spec.Domain, certDetailsRaw)
+	}
 
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while saving certificate data to database for domain %v", cert.Spec.Domain)
 	}
 
-	err = addAltNames(cert.Spec.Domain, altNamesRaw)
+	//Need to distinguish if this is a new cert or a renewal.
+	if isRenewal {
+		err = updateAltNames(cert.Spec.Domain, altNamesRaw)
+	} else {
+		err = addAltNames(cert.Spec.Domain, altNamesRaw)
+	}
 
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while saving domain alt-names data to database for domain %v", cert.Spec.Domain)
