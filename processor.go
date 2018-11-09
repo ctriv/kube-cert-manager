@@ -18,13 +18,13 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/jinzhu/gorm"
 	"log"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 	"github.com/vburenin/nsync"
@@ -58,10 +58,10 @@ type CertProcessor struct {
 	namespaces       []string
 	defaultProvider  string
 	defaultEmail     string
-	db               *bolt.DB
 	httpProvider     *httpRouterProvider
 	k8s              K8sClient
 	renewBeforeDays  int
+	db               *gorm.DB
 	wp               *workerpool.WorkerPool
 	maintWp          *workerpool.WorkerPool
 	locks            *nsync.NamedMutex
@@ -79,6 +79,7 @@ func NewCertProcessor(
 	defaultProvider string,
 	defaultEmail string,
 	renewBeforeDays int,
+	db *gorm.DB,
 	workers int) *CertProcessor {
 	return &CertProcessor{
 		k8s:              K8sClient{c: k8s, certClient: certClient},
@@ -90,6 +91,7 @@ func NewCertProcessor(
 		defaultProvider:  defaultProvider,
 		defaultEmail:     defaultEmail,
 		renewBeforeDays:  renewBeforeDays,
+		db:               db,
 		httpProvider:     newHttpRouterProvider(),
 		wp:               workerpool.New(workers),
 		maintWp:          workerpool.New(workers),
@@ -363,7 +365,7 @@ func normalizeHostnames(hostnames []string) []string {
 func (p *CertProcessor) getStoredAltNames(cert Certificate) ([]string, error) {
 	var altNamesRaw []byte
 
-	altNamesRaw, err := getAltNames(cert.Spec.Domain)
+	altNamesRaw, err := getAltNames(cert.Spec.Domain, p.db)
 
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while fetching altnames from database for domain %v", cert.Spec.Domain)
@@ -396,7 +398,7 @@ func equalAltNames(a, b []string) bool {
 
 // processCertificate creates or renews the corresponding secret
 // processCertificate will create new ACME users if necessary, and complete ACME challenges
-// processCertificate caches ACME user and certificate information in boltdb for reuse
+// processCertificate caches ACME user and certificate information in PostgreSQL for reuse
 func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (bool, error) {
 	var (
 		acmeUserInfo    ACMEUserData
@@ -492,13 +494,13 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 	email := valueOrDefault(cert.Spec.Email, p.defaultEmail)
 
 	var userInfoRaw, certDetailsRaw []byte
-	userInfoRaw, err = getUserInfo(email)
+	userInfoRaw, err = getUserInfo(email, p.db)
 
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while running database view user information transaction for domain %v", cert.Spec.Domain)
 	}
 
-	certDetailsRaw, err = getCertDetails(cert.Spec.Domain)
+	certDetailsRaw, err = getCertDetails(cert.Spec.Domain, p.db)
 
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while running database view certificate transaction for domain %v", cert.Spec.Domain)
@@ -563,7 +565,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 			return p.NoteCertError(cert, err, "Error while marshalling user info for domain %v", cert.Spec.Domain)
 		}
 
-		err = addUserInfo(email, userInfoRaw)
+		err = addUserInfo(email, userInfoRaw, p.db)
 
 		if err != nil {
 			return p.NoteCertError(cert, err, "Error while saving user data to database for domain %v", cert.Spec.Domain)
@@ -623,9 +625,9 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 
 	//Need to distinguish if this is a new cert or a renewal.
 	if isRenewal {
-		err = updateCertDetails(cert.Spec.Domain, certDetailsRaw)
+		err = updateCertDetails(cert.Spec.Domain, certDetailsRaw, p.db)
 	} else {
-		err = addCertDetails(cert.Spec.Domain, certDetailsRaw)
+		err = addCertDetails(cert.Spec.Domain, certDetailsRaw, p.db)
 	}
 
 	if err != nil {
@@ -634,9 +636,9 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 
 	//Need to distinguish if this is a new cert or a renewal.
 	if isRenewal {
-		err = updateAltNames(cert.Spec.Domain, altNamesRaw)
+		err = updateAltNames(cert.Spec.Domain, altNamesRaw, p.db)
 	} else {
-		err = addAltNames(cert.Spec.Domain, altNamesRaw)
+		err = addAltNames(cert.Spec.Domain, altNamesRaw, p.db)
 	}
 
 	if err != nil {

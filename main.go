@@ -63,6 +63,7 @@ func main() {
 		defaultEmail     string
 		renewBeforeDays  int
 		workers          int
+		dbArgs           string
 	)
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
@@ -77,6 +78,8 @@ func main() {
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
 	flag.IntVar(&workers, "workers", 4, "Number of parallel jobs to run at once")
+	flag.StringVar(&dbArgs, "db-args", "host=localhost port=5432 user=certmanager dbname=certmanager password=Pass1234 sslmode=disable",
+		"db host, port, username, password, sslmode")
 	flag.Parse()
 
 	if acmeURL == "" {
@@ -131,9 +134,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating TPR Certificate client: %v", err)
 	}
+	// Create the db
+	db, _ := db(dbArgs)
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, renewBeforeDays, workers)
+	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, renewBeforeDays, db, workers)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}

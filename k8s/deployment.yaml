@@ -32,6 +32,8 @@ spec:
             - "-default-email=techdev-mwc@liquidweb.com"
             # If you set a default provider, you can omit the field/annotation from Certificates/Ingresses
             - "-default-provider=http"
+            # PostreSQL database hostname, port, user, password, sslmode
+            - "-db-args=host=localhost port=5432 user=certmanager dbname=certmanager password=Pass1234 sslmode=disable"
           volumeMounts:
             - name:  data-dir-vol
               mountPath: /var/lib/cert-manager
