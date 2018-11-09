@@ -173,6 +173,7 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
 	log.Println("Shutdown signal received, exiting...")
+	p.db.Close()
 	close(doneChan)
 	wg.Wait()
 	return
