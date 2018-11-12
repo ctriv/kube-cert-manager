@@ -55,7 +55,6 @@ func main() {
 		acmeURL          string
 		syncInterval     int
 		certSecretPrefix string
-		dataDir          string
 		certNamespace    string
 		tagPrefix        string
 		namespaces       []string
@@ -63,14 +62,18 @@ func main() {
 		defaultEmail     string
 		renewBeforeDays  int
 		workers          int
-		dbArgs           string
+		dbHost           string
+		dbPort           string
+		dbUser           string
+		dbName           string
+		dbPassword       string
+		dbSslMode        string
 	)
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
 	flag.StringVar(&acmeURL, "acme-url", "", "The URL to the acme directory to use")
 	flag.StringVar(&certSecretPrefix, "cert-secret-prefix", "", "The prefix to use for certificate secrets")
 	flag.IntVar(&syncInterval, "sync-interval", 300, "Sync interval in seconds")
-	flag.StringVar(&dataDir, "data-dir", "/var/lib/cert-manager", "Data directory path")
 	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
 	flag.StringVar(&tagPrefix, "tag-prefix", "stable.liquidweb.com/kcm.", "Prefix added to labels and annotations")
 	flag.Var((*listFlag)(&namespaces), "namespaces", "Comma-separated list of namespaces to monitor. The empty list means all namespaces")
@@ -78,8 +81,12 @@ func main() {
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
 	flag.IntVar(&workers, "workers", 4, "Number of parallel jobs to run at once")
-	flag.StringVar(&dbArgs, "db-args", "host=localhost port=5432 user=certmanager dbname=certmanager password=Pass1234 sslmode=disable",
-		"db host, port, username, password, sslmode")
+	flag.StringVar(&dbHost, "db-host", "localhost", "hostname of db")
+	flag.StringVar(&dbPort, "db-port", "5432", "port number of db")
+	flag.StringVar(&dbUser, "db-username", "certmanager", "username for db")
+	flag.StringVar(&dbName, "db-name", "certmanager", "name of db")
+	flag.StringVar(&dbPassword, "db-password", "Pass1234", "password for db")
+	flag.StringVar(&dbSslMode, "db-sslmode", "disable", "enable or disable ssl mode for db connection")
 	flag.Parse()
 
 	if acmeURL == "" {
@@ -135,7 +142,8 @@ func main() {
 		log.Fatalf("error creating TPR Certificate client: %v", err)
 	}
 	// Create the db
-	db, _ := db(dbArgs)
+	db := db(dbHost, dbPort, dbUser, dbName, dbPassword, dbSslMode)
+	defer db.Close()
 
 	// Create the processor
 	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, renewBeforeDays, db, workers)
@@ -173,7 +181,6 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
 	<-signalChan
 	log.Println("Shutdown signal received, exiting...")
-	p.db.Close()
 	close(doneChan)
 	wg.Wait()
 	return

@@ -18,7 +18,6 @@ spec:
         - name: kube-cert-manager
           image: ctriv/kube-cert-manager:build-4
           args:
-            - "-data-dir=/var/lib/cert-manager"
             - "-acme-url=https://acme-staging.api.letsencrypt.org/directory"
             # NOTE: the URL above points to the staging server, where you won't get real certs.
             # Uncomment the line below to use the production LetsEncrypt server:
@@ -32,8 +31,18 @@ spec:
             - "-default-email=techdev-mwc@liquidweb.com"
             # If you set a default provider, you can omit the field/annotation from Certificates/Ingresses
             - "-default-provider=http"
-            # PostreSQL database hostname, port, user, password, sslmode
-            - "-db-args=host=localhost port=5432 user=certmanager dbname=certmanager password=Pass1234 sslmode=disable"
+            # PostreSQL database hostname
+            - "-db-host=localhost"
+            # PostreSQL database port
+            - "-db-port=5432"
+            # PostreSQL database username
+            - "-db-username=certmanager"
+            # PostreSQL database name
+            - "-db-name=certmanager"
+            # PostreSQL database password
+            - "-db-password=Pass1234"
+            # PostreSQL database sslmode
+            - "-db-sslmode=disable"
           volumeMounts:
             - name:  data-dir-vol
               mountPath: /var/lib/cert-manager
