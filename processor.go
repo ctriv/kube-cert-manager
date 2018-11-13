@@ -18,13 +18,13 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/jinzhu/gorm"
 	"log"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/boltdb/bolt"
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 	"github.com/vburenin/nsync"
@@ -58,10 +58,10 @@ type CertProcessor struct {
 	namespaces       []string
 	defaultProvider  string
 	defaultEmail     string
-	db               *bolt.DB
 	httpProvider     *httpRouterProvider
 	k8s              K8sClient
 	renewBeforeDays  int
+	db               *gorm.DB
 	wp               *workerpool.WorkerPool
 	maintWp          *workerpool.WorkerPool
 	locks            *nsync.NamedMutex
@@ -78,8 +78,8 @@ func NewCertProcessor(
 	namespaces []string,
 	defaultProvider string,
 	defaultEmail string,
-	db *bolt.DB,
 	renewBeforeDays int,
+	db *gorm.DB,
 	workers int) *CertProcessor {
 	return &CertProcessor{
 		k8s:              K8sClient{c: k8s, certClient: certClient},
@@ -90,8 +90,8 @@ func NewCertProcessor(
 		namespaces:       namespaces,
 		defaultProvider:  defaultProvider,
 		defaultEmail:     defaultEmail,
-		db:               db,
 		renewBeforeDays:  renewBeforeDays,
+		db:               db,
 		httpProvider:     newHttpRouterProvider(),
 		wp:               workerpool.New(workers),
 		maintWp:          workerpool.New(workers),
@@ -364,19 +364,20 @@ func normalizeHostnames(hostnames []string) []string {
 
 func (p *CertProcessor) getStoredAltNames(cert Certificate) ([]string, error) {
 	var altNamesRaw []byte
-	err := p.db.View(func(tx *bolt.Tx) error {
-		altNamesRaw = tx.Bucket([]byte("domain-altnames")).Get([]byte(cert.Spec.Domain))
-		return nil
-	})
+
+	altNamesRaw, err := getAltNames(cert.Spec.Domain, p.db)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while fetching altnames from database for domain %v", cert.Spec.Domain)
 	}
-	if altNamesRaw == nil {
+
+	if len(altNamesRaw) == 0 {
 		return nil, nil
 	}
 
 	var altNames []string
 	err = json.Unmarshal(altNamesRaw, &altNames)
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error while unmarshalling altnames from database for domain %v", cert.Spec.Domain)
 	}
@@ -397,7 +398,7 @@ func equalAltNames(a, b []string) bool {
 
 // processCertificate creates or renews the corresponding secret
 // processCertificate will create new ACME users if necessary, and complete ACME challenges
-// processCertificate caches ACME user and certificate information in boltdb for reuse
+// processCertificate caches ACME user and certificate information in PostgreSQL for reuse
 func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (bool, error) {
 	var (
 		acmeUserInfo    ACMEUserData
@@ -492,22 +493,23 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 
 	email := valueOrDefault(cert.Spec.Email, p.defaultEmail)
 
-	// Fetch acme user data and cert details from bolt
 	var userInfoRaw, certDetailsRaw []byte
-	err = p.db.View(func(tx *bolt.Tx) error {
-		userInfoRaw = tx.Bucket([]byte("user-info")).Get([]byte(email))
-		certDetailsRaw = tx.Bucket([]byte("cert-details")).Get([]byte(cert.Spec.Domain))
-		return nil
-	})
+	userInfoRaw, err = getUserInfo(email, p.db)
 
 	if err != nil {
-		return p.NoteCertError(cert, err, "Error while running bolt view transaction for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while running database view user information transaction for domain %v", cert.Spec.Domain)
+	}
+
+	certDetailsRaw, err = getCertDetails(cert.Spec.Domain, p.db)
+
+	if err != nil {
+		return p.NoteCertError(cert, err, "Error while running database view certificate transaction for domain %v", cert.Spec.Domain)
 	}
 
 	provider := valueOrDefault(cert.Spec.Provider, p.defaultProvider)
 
 	// Handle user information
-	if userInfoRaw != nil { // Use existing user
+	if len(userInfoRaw) > 0 { // Use existing user
 		if err = json.Unmarshal(userInfoRaw, &acmeUserInfo); err != nil {
 			return p.NoteCertError(cert, err, "Error while unmarshalling user info for %v", cert.Spec.Domain)
 		}
@@ -563,21 +565,17 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 			return p.NoteCertError(cert, err, "Error while marshalling user info for domain %v", cert.Spec.Domain)
 		}
 
-		// Save user info to bolt
-		err = p.db.Update(func(tx *bolt.Tx) error {
-			key := []byte(email)
-			tx.Bucket([]byte("user-info")).Put(key, userInfoRaw)
-			return nil
-		})
+		err = addUserInfo(email, userInfoRaw, p.db)
 
 		if err != nil {
-			return p.NoteCertError(cert, err, "Error while saving user data to bolt for domain %v", cert.Spec.Domain)
+			return p.NoteCertError(cert, err, "Error while saving user data to database for domain %v", cert.Spec.Domain)
 		}
 	}
 
 	domains := append([]string{cert.Spec.Domain}, altNames...)
+	isRenewal := false
 	// If we have cert details stored with expected altNames, do a renewal, otherwise, obtain from scratch
-	if certDetailsRaw == nil || acmeCert.DomainName == "" || !sameAltNames {
+	if len(certDetailsRaw) == 0 || acmeCert.DomainName == "" || !sameAltNames {
 		acmeCert.DomainName = cert.Spec.Domain
 
 		// Obtain a cert
@@ -611,6 +609,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		acmeCert.Cert = certRes.Certificate
 		acmeCert.PrivateKey = certRes.PrivateKey
 		acmeCertDetails = NewACMECertDetailsFromResource(certRes)
+		isRenewal = true
 	}
 
 	// Serialize acmeCertDetails and acmeUserInfo
@@ -624,15 +623,16 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		return p.NoteCertError(cert, err, "Error while marshalling altNames for domain %v", cert.Spec.Domain)
 	}
 
-	// Save cert details to bolt
-	err = p.db.Update(func(tx *bolt.Tx) error {
-		key := []byte(cert.Spec.Domain)
-		tx.Bucket([]byte("cert-details")).Put(key, certDetailsRaw)
-		tx.Bucket([]byte("domain-altnames")).Put(key, altNamesRaw)
-		return nil
-	})
+	err = saveCertDetails(cert.Spec.Domain, certDetailsRaw, p.db, isRenewal)
+
 	if err != nil {
-		return p.NoteCertError(cert, err, "Error while saving data to bolt for domain %v", cert.Spec.Domain)
+		return p.NoteCertError(cert, err, "Error while saving certificate data to database for domain %v", cert.Spec.Domain)
+	}
+
+	err = saveAltNames(cert.Spec.Domain, altNamesRaw, p.db, isRenewal)
+
+	if err != nil {
+		return p.NoteCertError(cert, err, "Error while saving domain alt-names data to database for domain %v", cert.Spec.Domain)
 	}
 
 	// Convert cert data to k8s secret
