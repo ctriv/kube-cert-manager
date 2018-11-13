@@ -14,11 +14,9 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"os/signal"
-	"path"
 	"strings"
 	"sync"
 	"syscall"
@@ -33,8 +31,6 @@ import (
 	"k8s.io/client-go/pkg/watch/versioned"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-
-	"github.com/boltdb/bolt"
 )
 
 type listFlag []string
@@ -59,7 +55,6 @@ func main() {
 		acmeURL          string
 		syncInterval     int
 		certSecretPrefix string
-		dataDir          string
 		certNamespace    string
 		tagPrefix        string
 		namespaces       []string
@@ -67,13 +62,18 @@ func main() {
 		defaultEmail     string
 		renewBeforeDays  int
 		workers          int
+		dbHost           string
+		dbPort           string
+		dbUser           string
+		dbName           string
+		dbPassword       string
+		dbSslMode        string
 	)
 
 	flag.StringVar(&kubeconfig, "kubeconfig", "", "The kubeconfig to use; if empty the in-cluster config will be used")
 	flag.StringVar(&acmeURL, "acme-url", "", "The URL to the acme directory to use")
 	flag.StringVar(&certSecretPrefix, "cert-secret-prefix", "", "The prefix to use for certificate secrets")
 	flag.IntVar(&syncInterval, "sync-interval", 300, "Sync interval in seconds")
-	flag.StringVar(&dataDir, "data-dir", "/var/lib/cert-manager", "Data directory path")
 	flag.StringVar(&certNamespace, "cert-namespace", "stable.liquidweb.com", "Namespace for the Certificate Third Party Resource")
 	flag.StringVar(&tagPrefix, "tag-prefix", "stable.liquidweb.com/kcm.", "Prefix added to labels and annotations")
 	flag.Var((*listFlag)(&namespaces), "namespaces", "Comma-separated list of namespaces to monitor. The empty list means all namespaces")
@@ -81,40 +81,22 @@ func main() {
 	flag.StringVar(&defaultEmail, "default-email", "", "Default email address for ACME registrations")
 	flag.IntVar(&renewBeforeDays, "renew-before-days", 7, "Renew certificates before this number of days until expiry")
 	flag.IntVar(&workers, "workers", 4, "Number of parallel jobs to run at once")
+	flag.StringVar(&dbHost, "db-host", "localhost", "hostname of db")
+	flag.StringVar(&dbPort, "db-port", "5432", "port number of db")
+	flag.StringVar(&dbUser, "db-username", "certmanager", "username for db")
+	flag.StringVar(&dbName, "db-name", "certmanager", "name of db")
+	flag.StringVar(&dbPassword, "db-password", "Pass1234", "password for db")
+	flag.StringVar(&dbSslMode, "db-sslmode", "disable", "enable or disable ssl mode for db connection")
 	flag.Parse()
 
 	if acmeURL == "" {
 		log.Fatal("The acme-url command line parameter must be specified")
 	}
 
-	// Initialize bolt
-	if err := os.MkdirAll(dataDir, 0700); err != nil {
-		log.Fatalf("Error while creating %v directory: %v", dataDir, err)
-	}
-
-	dbPath := path.Join(dataDir, "data.db")
-	db, err := bolt.Open(dbPath, 0600, nil)
-	if err != nil {
-		log.Fatalf("Error while creating bolt database file at %v: %v", dbPath, err)
-	}
-
-	for _, bucketName := range []string{"user-info", "cert-details", "domain-altnames"} {
-		err = db.Update(func(tx *bolt.Tx) error {
-			_, err = tx.CreateBucketIfNotExists([]byte(bucketName))
-			if err != nil {
-				return fmt.Errorf("create bucket: %s", err)
-			}
-			return nil
-		})
-
-		if err != nil {
-			log.Fatalf("Error while creating bolt bucket %v: %v", bucketName, err)
-		}
-	}
-
 	log.Println("Starting Kubernetes Certificate Controller...")
 
 	var k8sConfig *rest.Config
+	var err error
 	if kubeconfig == "" {
 		k8sConfig, err = rest.InClusterConfig()
 	} else {
@@ -159,9 +141,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating TPR Certificate client: %v", err)
 	}
+	// Create the db
+	db := db(dbHost, dbPort, dbUser, dbName, dbPassword, dbSslMode)
+	defer db.Close()
 
 	// Create the processor
-	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, db, renewBeforeDays, workers)
+	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, renewBeforeDays, db, workers)
 
 	// Asynchronously start watching and refreshing certs
 	wg := sync.WaitGroup{}
