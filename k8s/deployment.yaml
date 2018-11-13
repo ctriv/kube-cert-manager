@@ -40,6 +40,6 @@ spec:
             # PostreSQL database name
             - "-db-name=certmanager"
             # PostreSQL database password
-            - "-db-password=Pass1234"
+            - "-db-password=password"
             # PostreSQL database sslmode
-            - "-db-sslmode=disable"
+            - "-db-sslmode=required"
