@@ -127,10 +127,12 @@ func updateAltNames(domain string, altNamesRaw []byte, d *gorm.DB) error {
 	s := string(altNamesRaw)
 	var altNames DomainAltname
 	if dbErr := d.Where(&DomainAltname{Domain: domain}).First(&altNames).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "Unable to update alt names for %s", domain)
+		return errors.Wrapf(dbErr, "On update, unable to retrieve alt names for %s", domain)
 	}
 	altNames.Value = s
-	d.Save(&altNames)
+	if dbErr := d.Save(&altNames).Error; dbErr != nil {
+		return errors.Wrapf(dbErr, "Unable to update alt names for %s", domain)
+	}
 	return nil
 }
 
@@ -141,10 +143,12 @@ func updateCertDetails(domain string, certDetailsRaw []byte, d *gorm.DB) error {
 	s := string(certDetailsRaw)
 	var certDetails CertDetail
 	if dbErr := d.Where(&CertDetail{Domain: domain}).First(&certDetails).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "Unable to update cert details for %s", domain)
+		return errors.Wrapf(dbErr, "On update, unable to retrieve cert details for %s", domain)
 	}
 	certDetails.Value = s
-	d.Save(&certDetails)
+	if dbErr := d.Save(&certDetails).Error; dbErr != nil {
+		return errors.Wrapf(dbErr, "Unable to update cert details for %s", domain)
+	}
 	return nil
 }
 
