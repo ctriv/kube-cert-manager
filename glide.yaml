@@ -1,6 +1,5 @@
 package: liquidweb.com/kube-cert-manager
 import:
-- package: github.com/jinzhu/gorm
 - package: github.com/pkg/errors
 - package: github.com/xenolf/lego
   version: 5dfe609afb1ebe9da97c9846d97a55415e5a5ccd
@@ -34,3 +33,5 @@ import:
   version: ~1.6.2
 - package: github.com/gammazero/workerpool
 - package: github.com/vburenin/nsync
+- package: github.com/jinzhu/gorm
+  version: ~1.9.1
