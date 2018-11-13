@@ -623,23 +623,13 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		return p.NoteCertError(cert, err, "Error while marshalling altNames for domain %v", cert.Spec.Domain)
 	}
 
-	//Need to distinguish if this is a new cert or a renewal.
-	if isRenewal {
-		err = updateCertDetails(cert.Spec.Domain, certDetailsRaw, p.db)
-	} else {
-		err = addCertDetails(cert.Spec.Domain, certDetailsRaw, p.db)
-	}
+	err = saveCertDetails(cert.Spec.Domain, certDetailsRaw, p.db, isRenewal)
 
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while saving certificate data to database for domain %v", cert.Spec.Domain)
 	}
 
-	//Need to distinguish if this is a new cert or a renewal.
-	if isRenewal {
-		err = updateAltNames(cert.Spec.Domain, altNamesRaw, p.db)
-	} else {
-		err = addAltNames(cert.Spec.Domain, altNamesRaw, p.db)
-	}
+	err = saveAltNames(cert.Spec.Domain, altNamesRaw, p.db, isRenewal)
 
 	if err != nil {
 		return p.NoteCertError(cert, err, "Error while saving domain alt-names data to database for domain %v", cert.Spec.Domain)
