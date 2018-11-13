@@ -40,13 +40,6 @@ spec:
             # PostreSQL database name
             - "-db-name=certmanager"
             # PostreSQL database password
-            - "-db-password=Pass1234"
+            - "-db-password=password"
             # PostreSQL database sslmode
-            - "-db-sslmode=disable"
-          volumeMounts:
-            - name:  data-dir-vol
-              mountPath: /var/lib/cert-manager
-      volumes:
-        - name: data-dir-vol
-          persistentVolumeClaim:
-            claimName: cert-manager-volume
+            - "-db-sslmode=required"
