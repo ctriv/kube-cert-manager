@@ -141,8 +141,16 @@ func main() {
 	if err != nil {
 		log.Fatalf("error creating TPR Certificate client: %v", err)
 	}
-	// Create the db
+
+	// Open the db connection
 	db := db(dbHost, dbPort, dbUser, dbName, dbPassword, dbSslMode)
+
+	// Create db schema
+	err = Migrate(*db)
+	if err != nil {
+		log.Fatalf("Could not perform database migrations: %v", err)
+	}
+
 	defer db.Close()
 
 	// Create the processor

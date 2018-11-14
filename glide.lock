@@ -1,5 +1,5 @@
-hash: 81cdb5e0200248c6b4338352155bb307a86ebb3d934635be8e09e3d443e32383
-updated: 2018-11-13T14:25:43.474371171-06:00
+hash: d6adbd2e63effc21cf7b785114b9e5ee000b51383d45177e241ff049434aa914
+updated: 2018-11-14T09:38:56.794298346-06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -237,6 +237,8 @@ imports:
   - internal/remote_api
   - internal/urlfetch
   - urlfetch
+- name: gopkg.in/gormigrate.v1
+  version: dcfb424b8448715735468fa2f573cce5caca178b
 - name: gopkg.in/inf.v0
   version: 3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4
 - name: gopkg.in/ini.v1
