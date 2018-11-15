@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"mime"
 	"net/http"
 	"net/url"
@@ -447,7 +446,6 @@ func (r *Request) VersionedParams(obj runtime.Object, codec runtime.ParameterCod
 	}
 	params, err := codec.EncodeParameters(obj, *r.content.GroupVersion)
 	if err != nil {
-		log.Printf("Got error: %v", err)
 		r.err = err
 		return r
 	}
