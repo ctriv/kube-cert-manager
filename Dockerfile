@@ -1,7 +1,6 @@
 FROM golang:alpine as gobuilder
 
 WORKDIR /go/src/github.com/liquidweb/kube-cert-manager
-# RUN apk update && apk add git bash
 COPY . .
 RUN CGO_ENABLED=0 go build
 
