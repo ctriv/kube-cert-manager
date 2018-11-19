@@ -103,13 +103,8 @@ Save Certificate Details
 func saveCertDetails(domain string, certDetailsRaw []byte, db *gorm.DB) error {
 	var certDetails CertDetail
 
-	if err := db.Where(&CertDetail{Domain: domain}).FirstOrInit(&certDetails).Error; err != nil {
-		return errors.Wrapf(err, "Unable to initialize cert details for %s", domain)
-	}
-
-	certDetails.Value = string(certDetailsRaw)
-
-	if err := db.Save(&certDetails).Error; err != nil {
+	err := db.Where(CertDetail{Domain: domain}).Assign(CertDetail{Value: string(certDetailsRaw)}).FirstOrCreate(&certDetails).Error
+	if err != nil {
 		return errors.Wrapf(err, "Unable to save cert details for %s", domain)
 	}
 
@@ -122,13 +117,8 @@ Save Alternative Names
 func saveAltNames(domain string, altNamesRaw []byte, db *gorm.DB) error {
 	var altNames DomainAltname
 
-	if err := db.Where(&DomainAltname{Domain: domain}).FirstOrInit(&altNames).Error; err != nil {
-		return errors.Wrapf(err, "Unable to initialize alt names for %s", domain)
-	}
-
-	altNames.Value = string(altNamesRaw)
-
-	if err := db.Save(&altNames).Error; err != nil {
+	err := db.Where(DomainAltname{Domain: domain}).Assign(DomainAltname{Value: string(altNamesRaw)}).FirstOrCreate(&altNames).Error
+	if err != nil {
 		return errors.Wrapf(err, "Unable to save alt names for %s", domain)
 	}
 
