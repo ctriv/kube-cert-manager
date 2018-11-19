@@ -97,79 +97,30 @@ func addUserInfo(email string, userInfo []byte, d *gorm.DB) error {
 	}
 	return nil
 }
-
 /**
-Save Certificate Details key domain, value certDetails
+Save Certificate Details
 */
-func addCertDetails(domain string, certDetails []byte, d *gorm.DB) error {
-	s := string(certDetails)
-	if dbErr := d.Create(&CertDetail{Domain: domain, Value: s}).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "Unable to add cert details for %s", domain)
-	}
-	return nil
-}
-
-/**
-Save Alt Names Details key domain, value altNames
-*/
-func addAltNames(domain string, altNames []byte, d *gorm.DB) error {
-	s := string(altNames)
-	if dbErr := d.Create(&DomainAltname{Domain: domain, Value: s}).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "Unable to add alt names for %s", domain)
-	}
-	return nil
-}
-
-/**
-Update Alt Names Details key domain, new values altNames
-*/
-func updateAltNames(domain string, altNamesRaw []byte, d *gorm.DB) error {
-	s := string(altNamesRaw)
-	var altNames DomainAltname
-	if dbErr := d.Where(&DomainAltname{Domain: domain}).First(&altNames).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "On update, unable to retrieve alt names for %s", domain)
-	}
-	altNames.Value = s
-	if dbErr := d.Save(&altNames).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "Unable to update alt names for %s", domain)
-	}
-	return nil
-}
-
-/**
-Update Certificate Details key domain, new value certDetails
-*/
-func updateCertDetails(domain string, certDetailsRaw []byte, d *gorm.DB) error {
-	s := string(certDetailsRaw)
+func saveCertDetails(domain string, certDetailsRaw []byte, db *gorm.DB) error {
 	var certDetails CertDetail
-	if dbErr := d.Where(&CertDetail{Domain: domain}).First(&certDetails).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "On update, unable to retrieve cert details for %s", domain)
+
+	err := db.Where(CertDetail{Domain: domain}).Assign(CertDetail{Value: string(certDetailsRaw)}).FirstOrCreate(&certDetails).Error
+	if err != nil {
+		return errors.Wrapf(err, "Unable to save cert details for %s", domain)
 	}
-	certDetails.Value = s
-	if dbErr := d.Save(&certDetails).Error; dbErr != nil {
-		return errors.Wrapf(dbErr, "Unable to update cert details for %s", domain)
-	}
+
 	return nil
 }
 
 /**
-Wrapper function to either save or update depending on renewal flag
+Save Alternative Names
 */
-func saveCertDetails(domain string, certDetailsRaw []byte, d *gorm.DB, isRenewal bool) error {
-	if isRenewal {
-		return updateCertDetails(domain, certDetailsRaw, d)
-	} else {
-		return addCertDetails(domain, certDetailsRaw, d)
-	}
-}
+func saveAltNames(domain string, altNamesRaw []byte, db *gorm.DB) error {
+	var altNames DomainAltname
 
-/**
-Wrapper function to either save or update depending on renewal flag
-*/
-func saveAltNames(domain string, altNamesRaw []byte, d *gorm.DB, isRenewal bool) error {
-	if isRenewal {
-		return updateAltNames(domain, altNamesRaw, d)
-	} else {
-		return addAltNames(domain, altNamesRaw, d)
+	err := db.Where(DomainAltname{Domain: domain}).Assign(DomainAltname{Value: string(altNamesRaw)}).FirstOrCreate(&altNames).Error
+	if err != nil {
+		return errors.Wrapf(err, "Unable to save alt names for %s", domain)
 	}
+
+	return nil
 }
