@@ -3,9 +3,9 @@ services:
 - docker
 language: go
 env:
-  - DOCKER_COMPOSE_VERSION=1.23.2
   global:
   - DOCKER_ORG=$(dirname ${TRAVIS_REPO_SLUG})
+  - DOCKER_COMPOSE_VERSION=1.23.2
 go:
 - "1.10.x"
 script:
