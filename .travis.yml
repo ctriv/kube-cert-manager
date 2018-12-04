@@ -9,6 +9,7 @@ go:
 - "1.10.x"
 script:
 - "./build.sh"
+- "go test"
 before_deploy:
 - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
 deploy:

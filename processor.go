@@ -683,7 +683,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 
 func (p *CertProcessor) NoteCertError(cert Certificate, err error, format string, args ...interface{}) (bool, error) {
 	namespace := certificateNamespace(cert)
-	wrapped_err := errors.Wrapf(err, format, args)
+	wrapped_err := errors.Wrapf(err, format, args...)
 	now, _ := time.Now().UTC().MarshalText()
 
 	p.k8s.updateCertStatus(namespace, cert.Metadata.Name, CertificateStatus{
