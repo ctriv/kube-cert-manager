@@ -12,9 +12,8 @@ before_install:
   - chmod +x docker-compose
   - sudo mv docker-compose /usr/local/bin
   - docker-compose -version
-  - wget https://github.com/letsencrypt/releases/boulder-release-2018-12-03.tar.gz -O /tmp/boulder.tar.gz
-  - tar -xvf /tmp/boulder.tar.gz
-  - docker-compose up
+  - wget https://github.com/letsencrypt/boulder.git -O /tmp/boulder
+  - cd /tmp/bould && docker-compose up
   - docker ps
 go:
 - "1.10.x"
