@@ -14,6 +14,8 @@ before_install:
   - docker-compose -version
   - wget https://github.com/letsencrypt/boulder/archive/release-2018-12-03.tar.gz -O /tmp/boulder.tar.gz
   - tar -xvf /tmp/boulder.tar.gz
+  - cd /tmp
+  - ls -la
   - docker-compose up
   - docker ps
 go:
