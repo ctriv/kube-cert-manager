@@ -37,3 +37,5 @@ import:
   version: ~1.9.1
 - package: gopkg.in/gormigrate.v1
   version: ~1.2.1
+- package: github.com/golang/protobuf
+  version: ~1.2.0

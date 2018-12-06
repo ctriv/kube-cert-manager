@@ -1,5 +1,5 @@
-hash: d6adbd2e63effc21cf7b785114b9e5ee000b51383d45177e241ff049434aa914
-updated: 2018-11-14T09:38:56.794298346-06:00
+hash: 5c967191938e100c98c618fb2c7ff334f8377eae35fddcbdd5cfb2a2c729777b
+updated: 2018-12-06T08:06:23.264975754-06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -90,7 +90,7 @@ imports:
 - name: github.com/golang/glog
   version: 44145f04b68cf362d9c4df2182967c2275eaefed
 - name: github.com/golang/protobuf
-  version: 8616e8ee5e20a1704615e6c8d7afcdac06087a67
+  version: aa810b61a9c79d51363740d207bb46cf8e620ed5
   subpackages:
   - proto
 - name: github.com/google/go-querystring
@@ -112,7 +112,7 @@ imports:
   subpackages:
   - lib
 - name: github.com/jinzhu/gorm
-  version: 6ed508ec6a4ecb3531899a69cbc746ccf65a4166
+  version: 472c70caa40267cb89fd8facb07fe6454b578626
   subpackages:
   - dialects/postgres
 - name: github.com/jinzhu/inflection
