@@ -14,9 +14,7 @@ package main
 
 import (
 	"flag"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"strings"
@@ -155,11 +153,7 @@ func main() {
 
 	defer db.Close()
 
-	go func() {
-		// Prometheus
-		http.Handle("/metrics", promhttp.Handler())
-		log.Fatal(http.ListenAndServe(":2112", nil))
-	} ()
+	startPrometheus()
 
 	// Create the processor
 	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, renewBeforeDays, db, workers)
