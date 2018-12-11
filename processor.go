@@ -648,6 +648,8 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		return p.NoteCertError(cert, err, "Error while saving secret for domain %v", cert.Spec.Domain)
 	}
 
+	recordSuccessfulCert(isUpdate)
+
 	msg := "Created certificate"
 	if isUpdate {
 		msg = "Updated certificate"
@@ -691,6 +693,8 @@ func (p *CertProcessor) NoteCertError(cert Certificate, err error, format string
 		ErrorDate:   string(now),
 		ErrorMsg:    wrapped_err.Error(),
 	})
+
+	recordFailedCert()
 
 	return false, wrapped_err
 }

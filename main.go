@@ -153,6 +153,8 @@ func main() {
 
 	defer db.Close()
 
+	startPrometheus()
+
 	// Create the processor
 	p := NewCertProcessor(k8sClient, certClient, acmeURL, certSecretPrefix, certNamespace, tagPrefix, namespaces, defaultProvider, defaultEmail, renewBeforeDays, db, workers)
 
