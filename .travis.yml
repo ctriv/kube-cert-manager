@@ -5,24 +5,11 @@ language: go
 env:
   global:
   - DOCKER_ORG=$(dirname ${TRAVIS_REPO_SLUG})
-  - DOCKER_COMPOSE_VERSION=1.23.2
-before_install:
-  - sudo rm /usr/local/bin/docker-compose
-  - curl -L https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-`uname -s`-`uname -m` > docker-compose
-  - chmod +x docker-compose
-  - sudo mv docker-compose /usr/local/bin
-  - docker-compose -version
-  - pwd
-  - wget https://github.com/letsencrypt/boulder/archive/release-2018-12-03.tar.gz -O /tmp/boulder.tar.gz
-  - tar -xvf /tmp/boulder.tar.gz
-  - ls -la
-  - cd boulder-release-2018-12-03 && docker-compose up
-  - docker ps
 go:
 - "1.10.x"
 script:
 - "./build.sh"
-- "go test"
+- "go test -run Unit"
 before_deploy:
 - docker login -u="${DOCKER_USERNAME}" -p="${DOCKER_PASSWORD}"
 deploy:
