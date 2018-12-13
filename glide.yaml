@@ -33,7 +33,6 @@ import:
   version: ~1.6.2
 - package: github.com/gammazero/workerpool
 - package: github.com/vburenin/nsync
-- pakcage: github.com/stretchr/testify/assert
 - package: github.com/jinzhu/gorm
   version: ~1.9.1
 - package: gopkg.in/gormigrate.v1
@@ -44,3 +43,7 @@ import:
   version: ~0.9.1
   subpackages:
   - prometheus/promhttp
+- package: github.com/stretchr/testify
+  version: ~1.2.2
+  subpackages:
+  - assert
