@@ -29,7 +29,7 @@ func startPrometheus() {
 	go func() {
 		http.Handle("/metrics", promhttp.Handler())
 		log.Fatal(http.ListenAndServe(":2112", nil))
-	} ()
+	}()
 }
 
 func recordSuccessfulCert(isUpdate bool) {
@@ -43,4 +43,3 @@ func recordSuccessfulCert(isUpdate bool) {
 func recordFailedCert() {
 	failedCert.Inc()
 }
-
