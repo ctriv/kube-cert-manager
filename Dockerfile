@@ -1,7 +1,10 @@
 FROM golang:alpine as gobuilder
 
 WORKDIR /go/src/github.com/liquidweb/kube-cert-manager
+RUN apk update && apk add git bash curl
+RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | bash
 COPY . .
+RUN dep ensure
 RUN CGO_ENABLED=0 go build
 
 FROM scratch
