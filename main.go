@@ -23,14 +23,13 @@ import (
 	"time"
 
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/runtime/serializer"
-	"k8s.io/client-go/pkg/watch/versioned"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
 type listFlag []string
@@ -110,24 +109,25 @@ func main() {
 		log.Fatalf("Error trying to to create k8s client: %v", err)
 	}
 
-	groupVersion := unversioned.GroupVersion{
+	groupVersion := schema.GroupVersion{
 		Group:   "stable.liquidweb.com",
 		Version: "v1",
 	}
 	// Create a client for the certificate TPR too
+	scheme := runtime.NewScheme()
 	schemeBuilder := runtime.NewSchemeBuilder(
 		func(scheme *runtime.Scheme) error {
 			scheme.AddKnownTypes(
 				groupVersion,
 				&Certificate{},
 				&CertificateList{},
-				&api.ListOptions{},
-				&api.DeleteOptions{},
+				&metav1.ListOptions{},
+				&metav1.DeleteOptions{},
 			)
-			versioned.AddToGroupVersion(scheme, groupVersion)
+			metav1.AddToGroupVersion(scheme, groupVersion)
 			return nil
 		})
-	if err := schemeBuilder.AddToScheme(api.Scheme); err != nil {
+	if err := schemeBuilder.AddToScheme(scheme); err != nil {
 		log.Fatalf("error setting up certificate scheme: %v", err)
 	}
 
@@ -135,7 +135,7 @@ func main() {
 	tprConfig.GroupVersion = &groupVersion
 	tprConfig.APIPath = "/apis"
 	tprConfig.ContentType = runtime.ContentTypeJSON
-	tprConfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
+	tprConfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: serializer.NewCodecFactory(scheme)}
 
 	certClient, err := rest.RESTClientFor(&tprConfig)
 	if err != nil {
@@ -165,7 +165,7 @@ func main() {
 	if len(p.namespaces) == 0 {
 		wg.Add(1)
 		go p.watchKubernetesEvents(
-			v1.NamespaceAll,
+			metav1.NamespaceAll,
 			&wg,
 			doneChan)
 	} else {

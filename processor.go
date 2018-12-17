@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"github.com/jinzhu/gorm"
+	"k8s.io/api/core/v1"
 	"log"
 	"sort"
 	"strings"
@@ -45,8 +46,9 @@ import (
 	"github.com/xenolf/lego/providers/dns/route53"
 	"github.com/xenolf/lego/providers/dns/vultr"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // CertProcessor holds the shared configuration, state, and locks
@@ -655,7 +657,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		msg = "Updated certificate"
 	}
 	p.k8s.createEvent(v1.Event{
-		ObjectMeta: v1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 		},
 		InvolvedObject: v1.ObjectReference{

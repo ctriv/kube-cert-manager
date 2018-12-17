@@ -5,17 +5,18 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"k8s.io/api/core/v1"
 	"log"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xenolf/lego/acme"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
+
+	"k8s.io/apimachinery/pkg/runtime"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // K8sClient provides convenience functions for handling resources this project
@@ -37,8 +38,8 @@ type CertificateEvent struct {
 }
 
 type Certificate struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta    `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata             metav1.ObjectMeta    `json:"metadata"`
 	Spec                 CertificateSpec   `json:"spec"`
 	Status               CertificateStatus `json:"status,omitempty"`
 }
@@ -51,16 +52,22 @@ type CertificateStatus struct {
 	ErrorDate   string `json:"error_date,omitempty"`
 }
 
-func (c *Certificate) GetObjectKind() unversioned.ObjectKind {
-	return &c.TypeMeta
-}
-
-func (c *Certificate) GetObjectMeta() meta.Object {
+func (c *Certificate) GetObjectMeta() metav1.Object {
 	return &c.Metadata
 }
 
 func (c *Certificate) FQName() string {
 	return c.Metadata.Namespace + "/" + c.Metadata.Name
+}
+
+func ( Certificate) DeepCopyObject() runtime.Object {
+	log.Print("Certificate DeepCopyObject Not Implemented")
+	return nil
+}
+
+func ( CertificateList) DeepCopyObject() runtime.Object {
+	log.Print("CertificateList DeepCopyObject Not Implemented")
+	return nil
 }
 
 type CertificateCopy Certificate
@@ -78,17 +85,9 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 }
 
 type CertificateList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata             metav1.ListMeta `json:"metadata"`
 	Items                []Certificate        `json:"items"`
-}
-
-func (c *CertificateList) GetObjectKind() unversioned.ObjectKind {
-	return &c.TypeMeta
-}
-
-func (c *CertificateList) GetListMeta() unversioned.List {
-	return &c.Metadata
 }
 
 type CertificateListCopy CertificateList
@@ -156,7 +155,7 @@ func (u *ACMEUserData) GetPrivateKey() crypto.PrivateKey {
 
 // ToSecret creates a Kubernetes Secret from an ACME Certificate
 func (c *ACMECertData) ToSecret(name string, labels map[string]string) *v1.Secret {
-	var metadata v1.ObjectMeta
+	var metadata metav1.ObjectMeta
 	metadata.Name = name
 
 	metadata.Labels = map[string]string{
@@ -173,7 +172,7 @@ func (c *ACMECertData) ToSecret(name string, labels map[string]string) *v1.Secre
 	data["tls.key"] = c.PrivateKey
 
 	return &v1.Secret{
-		TypeMeta: unversioned.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Secret",
 		},
