@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"time"
 
@@ -14,9 +15,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // K8sClient provides convenience functions for handling resources this project
@@ -50,6 +50,10 @@ type CertificateStatus struct {
 	ExpiresDate string `json:"expires,omitempty"`
 	ErrorMsg    string `json:"error_msg,omitempty"`
 	ErrorDate   string `json:"error_date,omitempty"`
+}
+
+func (c *Certificate) GetObjectKind() schema.ObjectKind {
+	return &c.TypeMeta
 }
 
 func (c *Certificate) GetObjectMeta() metav1.Object {
@@ -88,6 +92,14 @@ type CertificateList struct {
 	metav1.TypeMeta `json:",inline"`
 	Metadata             metav1.ListMeta `json:"metadata"`
 	Items                []Certificate        `json:"items"`
+}
+
+func (c *CertificateList) GetObjectKind() schema.ObjectKind {
+	return &c.TypeMeta
+}
+
+func (c *CertificateList) GetListMeta() metav1.ListInterface {
+	return &c.Metadata
 }
 
 type CertificateListCopy CertificateList
