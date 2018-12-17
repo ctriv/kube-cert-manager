@@ -14,21 +14,20 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/watch"
-	"k8s.io/client-go/util/flowcontrol"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/flowcontrol"
 
 	"github.com/pkg/errors"
-
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/cache"
 )
 
 func (k K8sClient) createEvent(ev v1.Event) {
