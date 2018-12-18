@@ -1,5 +1,5 @@
-hash: 23afbf0669146382935c9203270080e917c07bc26dd09004dde11141f2f33453
-updated: 2018-12-13T12:09:30.081309-06:00
+hash: 7d597263d2f2dbbc41c99ecf8219072cba74a1893d8b28eef2e6d630525654e0
+updated: 2018-12-13T12:53:14.01599-06:00
 imports:
 - name: cloud.google.com/go
   version: 3b1ae45394a234c385be014e9a488f2bb6eef821
@@ -285,6 +285,8 @@ imports:
   - json
 - name: gopkg.in/yaml.v2
   version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
+- name: k8s.io/apimachinery
+  version: 57dc7e687b5426ecb5df4cabdcdce30fddb74f22
 - name: k8s.io/client-go
   version: e121606b0d09b2e1c467183ee46217fa85a6b672
   subpackages:

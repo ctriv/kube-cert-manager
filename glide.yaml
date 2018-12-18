@@ -47,3 +47,4 @@ import:
   version: ~1.2.2
   subpackages:
   - assert
+- package: k8s.io/apimachinery

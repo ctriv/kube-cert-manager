@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/pkg/api"
+	"k8s.io/client-go/pkg/api/unversioned"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"log"
@@ -11,31 +13,24 @@ import (
 	"testing"
 )
 
-/*
-	Certificate Custom Resource Definition
-*/
-/*type Certificate struct {
-	metav1.TypeMeta `json:",inline"`
-	Metadata        metav1.ObjectMeta `json:"metadata"`
-	Spec            CertificateSpec   `json:"spec"`
-	Status          CertificateStatus `json:"status,omitempty"`
+type SimpleCert struct {
+	apiVersion string
+	kind       string
+	metadata   MetaData
+	spec       Spec
 }
 
-type CertificateStatus struct {
-	Provisioned string `json:"provisioned,omitempty"`
-	CreatedDate string `json:"created,omitempty"`
-	ExpiresDate string `json:"expires,omitempty"`
-	ErrorMsg    string `json:"error_msg,omitempty"`
-	ErrorDate   string `json:"error_date,omitempty"`
+type MetaData struct {
+	name string
 }
 
-type CertificateSpec struct {
-	Domain     string   `json:"domain"`
-	Provider   string   `json:"provider"`
-	Email      string   `json:"email"`
-	SecretName string   `json:"secretName"`
-	AltNames   []string `json:"altNames"`
-}*/
+type Spec struct {
+	domain     string
+	altNames   []string
+	email      string
+	provider   string
+	secretName string
+}
 
 func TestUnitExample(t *testing.T) {
 	//Test example
@@ -73,9 +68,86 @@ func TestIntegrationCertCreate(t *testing.T) {
 	}
 
 	assert.NotNil(t, k8sClient)
-	/*result :=
+	result := &Certificate{}
+	/*result := &Certificate{}
+	meta := MetaData{
+		"cert-test-058",
+	}
+	spec := Spec{
+		"www.test.-058.com",
+		[]string{"www.alt-name-1-058.com", "www.alt-name-2-058.com"},
+		"aalvarado@liquidweb.com",
+		"http",
+		"cert-test-one-tls-058",
+	}
+	cert := SimpleCert{
+		"stable.liquidweb.com/v1",
+		"Certificate",
+		meta,
+		spec,
+	}*/
 
-	k8sClient.BatchV1Client.RESTClient().Post().Name("kube-system").Resource("certificate").
-		Body(certObj).Do().Into(result)*/
+	///apis/stable.liquidweb.com/v1/namespaces/default/certificates/cert-test-58
+	//time := time2.Now()
+	time := unversioned.Now()
+	objMeta := api.ObjectMeta{
+		"cert-test-058",
+		"",
+		"default",
+		"",
+		"",
+		"",
+		0,
+		time,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		"",
+	}
+	typeMeta := unversioned.TypeMeta{
+		"",
+		"",
+	}
+	specData := CertificateSpec{
+		"www.test-058.com",
+		"http",
+		"aalvarado@liquidweb.com",
+		"cert-test-one-tls-58",
+		[]string{"www.alt-name-1-058.com", "www.alt-name-2-058.com"},
+	}
+	status := CertificateStatus{
+		"",
+		"",
+		"",
+		"",
+		"",
+	}
+	cert := Certificate{
+		typeMeta,
+		objMeta,
+		specData,
+		status,
+	}
+
+	fmt.Print(cert)
+	k8sClient.BatchV1Client.RESTClient().Post().Name("default").Resource("certificate").
+		Body(cert).Do().Into(result)
+	fmt.Printf("this is the result %s", result)
+
+	//req := k8sClient.BatchV1Client.RESTClient().Get().Resource("certificates").Namespace("default")
+
+	req := k8sClient.BatchV1().RESTClient().Get().Resource("certificates").Namespace("default")
+	var certList CertificateList
+
+	err = req.Do().Into(&certList)
+
+	if err != nil {
+		log.Printf("Error while retrieving certificate: %v. Retrying", err)
+	} else {
+		fmt.Print(certList.Items)
+	}
 
 }
