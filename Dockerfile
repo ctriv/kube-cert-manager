@@ -1,4 +1,4 @@
-FROM golang:alpine as gobuilder
+FROM alpine
 
 WORKDIR /go/src/github.com/liquidweb/kube-cert-manager
 RUN apk update && apk add git bash curl && apk --no-cache add ca-certificates
