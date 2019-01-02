@@ -1,7 +1,7 @@
 FROM golang:alpine as gobuilder
 
 WORKDIR /go/src/github.com/liquidweb/kube-cert-manager
-RUN apk update && apk add git bash curl && apk add ca-certificates
+RUN apk update && apk add git bash curl && apk --no-cache add ca-certificates
 RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | bash
 COPY . .
 RUN dep ensure
