@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -12,57 +11,14 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"log"
+	"math/rand"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 var SchemeGroupVersion = schema.GroupVersion{Group: "stable.liquidweb.com", Version: "v1"}
-
-/**
-This kubernetes client is a bit different than the one in types.go K8sClient.
-This version is used mainly for integration testing. Yet in the future we may
-want to refactor to only use one Kubernetes Client for all communication.
-*/
-type KubeClient struct {
-	KubeConfig *rest.Config
-	Client     *kubernetes.Clientset
-	CertClient *rest.RESTClient
-}
-
-type Conf struct {
-	LogFile string `mapstructure:"log_file"`
-
-	Psql struct {
-		Host         string `mapstructure:"host"`
-		Port         int    `mapstructure:"port"`
-		DatabaseName string `mapstructure:"db_name"`
-		User         string `mapstructure:"user"`
-		Password     string `mapstructure:"password"`
-		SslMode      string `mapstructure:"ssl_mode"`
-	}
-
-	Kube struct {
-		SourceConfigFile string `mapstructure:"src_config_file"`
-	}
-}
-
-func (conf *Conf) GetConf() *Conf {
-	viper.AddConfigPath(".")
-	viper.SetConfigName("test-conf")
-
-	err := viper.ReadInConfig()
-	if err != nil {
-		log.Fatalf("Fatal error config file: %s", err)
-	}
-
-	err = viper.Unmarshal(&conf)
-	if err != nil {
-		log.Fatal("Unable to unmarshal config")
-	}
-
-	return conf
-}
 
 func TestUnitExample(t *testing.T) {
 	//Test example
@@ -74,18 +30,7 @@ func TestUnitExample(t *testing.T) {
 }
 
 func TestIntegrationDBConnection(t *testing.T) {
-	fmt.Println("Testing DB Connection")
-	db := db("localhost", "5432", "certmanager", "certmanager", "Pass1234", "disable")
-
-	assert.NotNil(t, db)
-	db.Close()
-}
-
-func TestIntegrationCertCreation(t *testing.T) {
-	fmt.Println("Testing cert creation")
-
-	viper.AddConfigPath(".")
-	viper.SetConfigName("test-conf.yaml")
+	log.Println("Testing DB Connection")
 
 	var conf Conf
 	conf.GetConf()
@@ -98,32 +43,132 @@ func TestIntegrationCertCreation(t *testing.T) {
 		log.SetOutput(f)
 	}
 
-	/*createDummyCert(conf)
-	provisioned := checkCertStatus(conf)
+	db := db(conf.Psql.Host, conf.Psql.Port, conf.Psql.User, conf.Psql.DatabaseName, conf.Psql.Password, conf.Psql.SslMode)
 
-	assert.Equal(t, true, provisioned, "Cert has not provisioned")*/
-
-	cleanUpCert(conf)
-
+	assert.NotNil(t, db, "Database should not be nil")
+	db.Close()
 }
 
-func buildClients(configFile string) KubeClient {
-	var client KubeClient
+func TestIntegrationCertCreation(t *testing.T) {
+	log.Println("Start create certificate test")
+
+	var conf Conf
+	conf.GetConf()
+
+	if conf.LogFile != "" {
+		f, err := os.OpenFile(conf.LogFile, os.O_WRONLY|os.O_CREATE, 0755)
+		if err != nil {
+			log.Fatalf("Error while reading in file: %v", err)
+		}
+		log.SetOutput(f)
+	}
+
+	if conf.Kube.SourceConfigFile == "" {
+		log.Fatal("No Kube Config file specified.")
+	}
+
+	client := buildClients(conf.Kube.SourceConfigFile)
+	testCert := createDummyCert(client, conf)
+	provisioned := checkCertStatus(client, testCert.Metadata.Name, conf)
+	assert.Equal(t, true, provisioned, "Cert has not provisioned")
+	cleanUpCert(client, testCert, conf)
+}
+
+func createDummyCert(client K8sClient, conf Conf) Certificate {
+	ranNumber := getRandomNumber()
+	name := fmt.Sprintf("integration-test-%d", ranNumber)
+	domain := fmt.Sprintf("www.integration-test-%d.com", ranNumber)
+	secret := fmt.Sprintf("integration-secret-%d", ranNumber)
+	alt := fmt.Sprintf("www.integration-alt-%d.com", ranNumber)
+
+	log.Printf("Creating test certificate - %s", name)
+	dummyCert := Certificate{
+		Metadata: metav1.ObjectMeta{
+			Name: name,
+		},
+		Spec: CertificateSpec{
+			Domain:     domain,
+			Provider:   "http",
+			Email:      "integration-test@liquidweb.com",
+			SecretName: secret,
+			AltNames:   []string{alt},
+		},
+		Status: CertificateStatus{},
+	}
+	_, err := createCertificate(client.certClient, conf.Kube.NameSpace, &dummyCert)
+	if err != nil {
+		log.Fatalf("Failed to create certificate: %v", err)
+	}
+	return dummyCert
+}
+
+func checkCertStatus(client K8sClient, certName string, conf Conf) bool {
+	log.Printf("Checking certificate status of %s", certName)
+
+	var cert Certificate
+	prov := false
+	waitCtr := 0
+
+	for waitCtr < 5 || len(cert.Status.Provisioned) == 0 {
+		req := client.certClient.Get().Resource("certificates").
+			Namespace(conf.Kube.NameSpace).Name(certName)
+		err := req.Do().Into(&cert)
+
+		if err != nil {
+			log.Printf("Error while retrieving certificate: %v. Retrying", err)
+		}
+
+		time.Sleep(2 * time.Second)
+		waitCtr = waitCtr + 1
+	}
+
+	if cert.Status.Provisioned == "true" {
+		prov = true
+	}
+
+	return prov
+}
+
+func cleanUpCert(client K8sClient, testCert Certificate, conf Conf) {
+	log.Printf("Deleting test certificate %s", testCert.Metadata.Name)
+
+	req := client.certClient.Delete().Resource("certificates").
+		Namespace(conf.Kube.NameSpace).Name(testCert.Metadata.Name).Do()
+
+	if req.Error() != nil {
+		log.Printf("Error while deleting certificate: %v.", req.Error())
+	}
+
+	log.Printf("Deleting test secret %s", testCert.Spec.SecretName)
+
+	err := client.c.CoreV1().Secrets("default").Delete(testCert.Spec.SecretName, nil)
+
+	if err != nil {
+		log.Printf("Error while deleting secret: %v.", err)
+	}
+}
+
+func getRandomNumber() int {
+	rand.Seed(time.Now().UnixNano())
+	return rand.Intn(1000)
+}
+
+func buildClients(configFile string) K8sClient {
+	var client K8sClient
 	var err error
 
-	fmt.Println(configFile)
 	client.KubeConfig, err = clientcmd.BuildConfigFromFlags("", configFile)
 
 	if err != nil {
 		log.Fatalf("Failed to load client config: %+v", err)
 	}
 
-	client.Client, err = kubernetes.NewForConfig(client.KubeConfig)
+	client.c, err = kubernetes.NewForConfig(client.KubeConfig)
 	if err != nil {
 		log.Fatalf("Failed to create kubernetes client: %+v", err)
 	}
 
-	client.CertClient, err = newCertClient(client.KubeConfig)
+	client.certClient, err = newCertClient(client.KubeConfig)
 	if err != nil {
 		log.Fatalf("Failed to create certificate client: %+v", err)
 	}
@@ -164,81 +209,4 @@ func createCertificate(certClient *rest.RESTClient, namespace string, obj *Certi
 		Namespace(namespace).Resource("certificates").
 		Body(obj).Do().Into(result)
 	return result, err
-}
-
-func createDummyCert(conf Conf) {
-	if conf.Kube.SourceConfigFile == "" {
-		log.Fatal("No Kube Config file specified.")
-	}
-
-	client := buildClients(conf.Kube.SourceConfigFile)
-
-	dummyCert := Certificate{
-		Metadata: metav1.ObjectMeta{
-			Name: "dummy-certobj1",
-		},
-		Spec: CertificateSpec{
-			Domain:     "www.dummy-certificate-1.com",
-			Provider:   "http",
-			Email:      "aalvarado1@liquidweb.com",
-			SecretName: "dummy-certobj-tls-1",
-			AltNames:   []string{"dummy-certificate-1.com"},
-		},
-		Status: CertificateStatus{},
-	}
-	_, err := createCertificate(client.CertClient, "default", &dummyCert)
-	if err != nil {
-		log.Fatalf("Failed to create certificate: %v", err)
-	}
-
-}
-
-func checkCertStatus(conf Conf) bool {
-	if conf.Kube.SourceConfigFile == "" {
-		log.Fatal("No Kube Config file specified.")
-	}
-
-	client := buildClients(conf.Kube.SourceConfigFile)
-
-	req := client.CertClient.Get().Resource("certificates").
-		Namespace("default").Name("cert-test-57")
-
-	var cert Certificate
-
-	err := req.Do().Into(&cert)
-
-	if err != nil {
-		log.Printf("Error while retrieving certificate: %v. Retrying", err)
-	}
-
-	var prov bool
-	if cert.Status.Provisioned == "true" {
-		prov = true
-	} else {
-		prov = false
-	}
-
-	return prov
-}
-
-func cleanUpCert(conf Conf) {
-	if conf.Kube.SourceConfigFile == "" {
-		log.Fatal("No Kube Config file specified.")
-	}
-
-	client := buildClients(conf.Kube.SourceConfigFile)
-
-	req := client.CertClient.Delete().Resource("certificates").
-		Namespace("default").Name("cert-test-55").Do()
-
-	if req.Error() != nil {
-		log.Printf("Error while deleting certificate: %v.", req.Error())
-	}
-
-	err := client.Client.CoreV1().Secrets("default").Delete("cert-test-one-tls-55", nil)
-
-	if err != nil {
-		log.Printf("Error while deleting secret: %v.", err)
-	}
-
 }

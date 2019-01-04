@@ -1,10 +1,11 @@
 psql:
   host: "127.0.0.1"
-  port: 5432
+  port: "5432"
   user: "certmanager"
   db_name: "certmanager"
   password: "Pass1234"
   ssl_mode: "disable" # set to disable if no ssl
 kube:
   src_config_file: "/Users/armandoalvarado/.kube/config"
-log_file: "" # Leave blank to go to STDOUT, otherwise print to a file
+  name_space: "default"
+  log_file: "" # Leave blank to go to STDOUT, otherwise print to a file
