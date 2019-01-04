@@ -13,20 +13,14 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"strings"
 	"testing"
 	"time"
 )
 
 var SchemeGroupVersion = schema.GroupVersion{Group: "stable.liquidweb.com", Version: "v1"}
 
-func TestUnitExample(t *testing.T) {
-	//Test example
-	fmt.Println("Unit test 1")
-	actual := strings.ToUpper("hello")
-	expected := "HELLO"
-
-	assert.Equal(t, expected, actual)
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
 func TestIntegrationDBConnection(t *testing.T) {
@@ -149,7 +143,6 @@ func cleanUpCert(client K8sClient, testCert Certificate, conf Conf) {
 }
 
 func getRandomNumber() int {
-	rand.Seed(time.Now().UnixNano())
 	return rand.Intn(1000)
 }
 
