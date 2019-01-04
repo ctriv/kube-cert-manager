@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/spf13/viper"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
@@ -23,6 +24,7 @@ import (
 // cares about
 // TODO: merge the two clients
 type K8sClient struct {
+	KubeConfig *rest.Config
 	c          *kubernetes.Clientset
 	certClient *rest.RESTClient
 }
@@ -39,9 +41,9 @@ type CertificateEvent struct {
 
 type Certificate struct {
 	metav1.TypeMeta `json:",inline"`
-	Metadata             metav1.ObjectMeta    `json:"metadata"`
-	Spec                 CertificateSpec   `json:"spec"`
-	Status               CertificateStatus `json:"status,omitempty"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
+	Spec            CertificateSpec   `json:"spec"`
+	Status          CertificateStatus `json:"status,omitempty"`
 }
 
 type CertificateStatus struct {
@@ -64,12 +66,12 @@ func (c *Certificate) FQName() string {
 	return c.Metadata.Namespace + "/" + c.Metadata.Name
 }
 
-func ( Certificate) DeepCopyObject() runtime.Object {
+func (Certificate) DeepCopyObject() runtime.Object {
 	log.Print("Certificate DeepCopyObject Not Implemented")
 	return nil
 }
 
-func ( CertificateList) DeepCopyObject() runtime.Object {
+func (CertificateList) DeepCopyObject() runtime.Object {
 	log.Print("CertificateList DeepCopyObject Not Implemented")
 	return nil
 }
@@ -90,8 +92,8 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 
 type CertificateList struct {
 	metav1.TypeMeta `json:",inline"`
-	Metadata             metav1.ListMeta `json:"metadata"`
-	Items                []Certificate        `json:"items"`
+	Metadata        metav1.ListMeta `json:"metadata"`
+	Items           []Certificate   `json:"items"`
 }
 
 func (c *CertificateList) GetObjectKind() schema.ObjectKind {
@@ -141,6 +143,41 @@ type ACMECertDetails struct {
 	CertURL       string `json:"certUrl"`
 	CertStableURL string `json:"certStableUrl"`
 	AccountRef    string `json:"accountRef,omitempty"`
+}
+
+type Conf struct {
+	LogFile string `mapstructure:"log_file"`
+
+	Psql struct {
+		Host         string `mapstructure:"host"`
+		Port         string `mapstructure:"port"`
+		DatabaseName string `mapstructure:"db_name"`
+		User         string `mapstructure:"user"`
+		Password     string `mapstructure:"password"`
+		SslMode      string `mapstructure:"ssl_mode"`
+	}
+
+	Kube struct {
+		SourceConfigFile string `mapstructure:"src_config_file"`
+		NameSpace        string `mapstructure:"name_space"`
+	}
+}
+
+func (conf *Conf) GetConf() *Conf {
+	viper.AddConfigPath(".")
+	viper.SetConfigName("test-conf")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("Fatal error config file: %s", err)
+	}
+
+	err = viper.Unmarshal(&conf)
+	if err != nil {
+		log.Fatal("Unable to unmarshal config")
+	}
+
+	return conf
 }
 
 func (u *ACMEUserData) GetEmail() string {
