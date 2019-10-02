@@ -4,3 +4,5 @@ kube-cert-manager.exe
 data
 .idea
 vendor
+.vagrant
+*.log
