@@ -19,19 +19,19 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/pkg/errors"
-	"k8s.io/client-go/pkg/api"
-	kerrors "k8s.io/client-go/pkg/api/errors"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/runtime"
-	"k8s.io/client-go/pkg/util/flowcontrol"
-	"k8s.io/client-go/pkg/watch"
+	"k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/flowcontrol"
+
+	"github.com/pkg/errors"
 )
 
 func (k K8sClient) createEvent(ev v1.Event) {
-	now := unversioned.Now()
+	now := metav1.Now()
 	ev.Name = fmt.Sprintf("%s.%x", ev.InvolvedObject.Name, now.UnixNano())
 	if ev.Kind == "" {
 		ev.Kind = "Event"
@@ -88,7 +88,7 @@ func (k K8sClient) _doCertPatch(namespace string, name string, obj interface{}) 
 }
 
 func (k K8sClient) getSecret(namespace string, key string) (*v1.Secret, error) {
-	secret, err := k.c.Core().Secrets(namespace).Get(key)
+	secret, err := k.c.CoreV1().Secrets(namespace).Get(key, metav1.GetOptions{})
 	if err != nil {
 		switch kerr := err.(type) {
 		case kerrors.APIStatus:
@@ -109,16 +109,16 @@ func (k K8sClient) saveSecret(namespace string, secret *v1.Secret, isUpdate bool
 	}
 
 	if isUpdate {
-		_, err := k.c.Secrets(namespace).Update(secret)
+		_, err := k.c.CoreV1().Secrets(namespace).Update(secret)
 		return err
 	} else {
-		_, err := k.c.Secrets(namespace).Create(secret)
+		_, err := k.c.CoreV1().Secrets(namespace).Create(secret)
 		return err
 	}
 }
 
 func (k K8sClient) deleteSecret(namespace string, key string) error {
-	return k.c.Secrets(namespace).Delete(key, nil)
+	return k.c.CoreV1().Secrets(namespace).Delete(key, nil)
 }
 
 func (k K8sClient) deleteCertificate(c Certificate, namespace string) error {
@@ -131,10 +131,10 @@ func (k K8sClient) deleteCertificate(c Certificate, namespace string) error {
 }
 
 func (k K8sClient) getSecrets(namespace string) ([]v1.Secret, error) {
-	listOpts := v1.ListOptions{}
+	listOpts := metav1.ListOptions{}
 	listOpts.LabelSelector = "creator=kube-cert-manager"
 
-	list, err := k.c.Secrets(namespace).List(listOpts)
+	list, err := k.c.CoreV1().Secrets(namespace).List(listOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -163,20 +163,20 @@ func (k K8sClient) getCertificates(namespace string) ([]Certificate, error) {
 // allow labelselectors, but labelselectors should be preferred over field
 // selectors.
 func newListWatchFromClient(c cache.Getter, resource string, namespace string) *cache.ListWatch {
-	listFunc := func(options api.ListOptions) (runtime.Object, error) {
+	listFunc := func(options metav1.ListOptions) (runtime.Object, error) {
 		return c.Get().
 			Namespace(namespace).
 			Resource(resource).
-			VersionedParams(&options, api.ParameterCodec).
+			VersionedParams(&options, metav1.ParameterCodec).
 			Do().
 			Get()
 	}
-	watchFunc := func(options api.ListOptions) (watch.Interface, error) {
+	watchFunc := func(options metav1.ListOptions) (watch.Interface, error) {
 		return c.Get().
 			Prefix("watch").
 			Namespace(namespace).
 			Resource(resource).
-			VersionedParams(&options, api.ParameterCodec).
+			VersionedParams(&options, metav1.ParameterCodec).
 			Watch()
 	}
 	return &cache.ListWatch{ListFunc: listFunc, WatchFunc: watchFunc}

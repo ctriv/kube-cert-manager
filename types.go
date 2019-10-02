@@ -5,23 +5,26 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/spf13/viper"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"log"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/xenolf/lego/acme"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/meta"
-	"k8s.io/client-go/pkg/api/unversioned"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // K8sClient provides convenience functions for handling resources this project
 // cares about
 // TODO: merge the two clients
 type K8sClient struct {
+	KubeConfig *rest.Config
 	c          *kubernetes.Clientset
 	certClient *rest.RESTClient
 }
@@ -37,10 +40,10 @@ type CertificateEvent struct {
 }
 
 type Certificate struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             api.ObjectMeta    `json:"metadata"`
-	Spec                 CertificateSpec   `json:"spec"`
-	Status               CertificateStatus `json:"status,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ObjectMeta `json:"metadata"`
+	Spec            CertificateSpec   `json:"spec"`
+	Status          CertificateStatus `json:"status,omitempty"`
 }
 
 type CertificateStatus struct {
@@ -51,16 +54,26 @@ type CertificateStatus struct {
 	ErrorDate   string `json:"error_date,omitempty"`
 }
 
-func (c *Certificate) GetObjectKind() unversioned.ObjectKind {
+func (c *Certificate) GetObjectKind() schema.ObjectKind {
 	return &c.TypeMeta
 }
 
-func (c *Certificate) GetObjectMeta() meta.Object {
+func (c *Certificate) GetObjectMeta() metav1.Object {
 	return &c.Metadata
 }
 
 func (c *Certificate) FQName() string {
 	return c.Metadata.Namespace + "/" + c.Metadata.Name
+}
+
+func (Certificate) DeepCopyObject() runtime.Object {
+	log.Print("Certificate DeepCopyObject Not Implemented")
+	return nil
+}
+
+func (CertificateList) DeepCopyObject() runtime.Object {
+	log.Print("CertificateList DeepCopyObject Not Implemented")
+	return nil
 }
 
 type CertificateCopy Certificate
@@ -78,16 +91,16 @@ func (c *Certificate) UnmarshalJSON(data []byte) error {
 }
 
 type CertificateList struct {
-	unversioned.TypeMeta `json:",inline"`
-	Metadata             unversioned.ListMeta `json:"metadata"`
-	Items                []Certificate        `json:"items"`
+	metav1.TypeMeta `json:",inline"`
+	Metadata        metav1.ListMeta `json:"metadata"`
+	Items           []Certificate   `json:"items"`
 }
 
-func (c *CertificateList) GetObjectKind() unversioned.ObjectKind {
+func (c *CertificateList) GetObjectKind() schema.ObjectKind {
 	return &c.TypeMeta
 }
 
-func (c *CertificateList) GetListMeta() unversioned.List {
+func (c *CertificateList) GetListMeta() metav1.ListInterface {
 	return &c.Metadata
 }
 
@@ -132,6 +145,41 @@ type ACMECertDetails struct {
 	AccountRef    string `json:"accountRef,omitempty"`
 }
 
+type Conf struct {
+	LogFile string `mapstructure:"log_file"`
+
+	Psql struct {
+		Host         string `mapstructure:"host"`
+		Port         string `mapstructure:"port"`
+		DatabaseName string `mapstructure:"db_name"`
+		User         string `mapstructure:"user"`
+		Password     string `mapstructure:"password"`
+		SslMode      string `mapstructure:"ssl_mode"`
+	}
+
+	Kube struct {
+		SourceConfigFile string `mapstructure:"src_config_file"`
+		NameSpace        string `mapstructure:"name_space"`
+	}
+}
+
+func (conf *Conf) GetConf() *Conf {
+	viper.AddConfigPath(".")
+	viper.SetConfigName("test-conf")
+
+	err := viper.ReadInConfig()
+	if err != nil {
+		log.Fatalf("Fatal error config file: %s", err)
+	}
+
+	err = viper.Unmarshal(&conf)
+	if err != nil {
+		log.Fatal("Unable to unmarshal config")
+	}
+
+	return conf
+}
+
 func (u *ACMEUserData) GetEmail() string {
 	return u.Email
 }
@@ -156,7 +204,7 @@ func (u *ACMEUserData) GetPrivateKey() crypto.PrivateKey {
 
 // ToSecret creates a Kubernetes Secret from an ACME Certificate
 func (c *ACMECertData) ToSecret(name string, labels map[string]string) *v1.Secret {
-	var metadata v1.ObjectMeta
+	var metadata metav1.ObjectMeta
 	metadata.Name = name
 
 	metadata.Labels = map[string]string{
@@ -173,7 +221,7 @@ func (c *ACMECertData) ToSecret(name string, labels map[string]string) *v1.Secre
 	data["tls.key"] = c.PrivateKey
 
 	return &v1.Secret{
-		TypeMeta: unversioned.TypeMeta{
+		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
 			Kind:       "Secret",
 		},
