@@ -36,14 +36,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
-  config.vm.synced_folder ".", "/go/src/github.com/liquidweb/kube-cert-manager"
+  config.vm.synced_folder ".", "/home/vagrant/go/src/github.com/liquidweb/kube-cert-manager"
 
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
 
-cd /go/src/github.com/liquidweb/kube-cert-manager
+cd /home/vagrant/go/src/github.com/liquidweb/kube-cert-manager
 ./dev-setup/vm_build.sh
 
   SHELL

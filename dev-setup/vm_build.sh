@@ -8,10 +8,11 @@ echo "***************************** Setup Go ***********************************
 sudo add-apt-repository -y ppa:longsleep/golang-backports
 sudo apt-get update
 sudo apt-get install -y golang-go
-sudo mkdir /go/bin
-sudo mkdir /go/pkg
-echo "export GOPATH=/go" >> /home/vagrant/.bashrc
-source /home/vagrant/.bashrc
+sudo apt-get install -y go-dep
+export GOPATH=/home/vagrant/go
+echo "export GOPATH=/home/vagrant/go" >> /home/vagrant/.bashrc
+sudo mkdir $GOPATH/bin
+sudo mkdir $GOPATH/pkg
 
 echo "***************************** Install psql *****************************************"
 sudo apt install -y postgresql-client-common
@@ -26,12 +27,12 @@ sudo apt install -y docker-ce
 sudo apt install -y docker-compose
 
 echo "***************************** Spin up Postgres DB **********************************"
-cd /go/src/github.com/liquidweb/kube-cert-manager/dev-setup
+cd $GOPATH/src/github.com/liquidweb/kube-cert-manager/dev-setup
 sudo docker-compose up -d
 
 echo "***************************** Install Boulder **************************************"
-sudo mkdir /go/src/github.com/letsencrypt
-cd /go/src/github.com/letsencrypt
+sudo mkdir $GOPATH/src/github.com/letsencrypt
+cd $GOPATH/src/github.com/letsencrypt
 sudo git clone https://github.com/letsencrypt/boulder.git
 cd boulder
 sudo docker-compose up -d
