@@ -17,4 +17,5 @@ sudo apt install -y docker-ce
 sudo apt install -y docker-compose
 
 echo "***************************** Spin up Postgres DB **********************************"
+cd dev-setup
 sudo docker-compose up -d

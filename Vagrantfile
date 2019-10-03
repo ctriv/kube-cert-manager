@@ -44,7 +44,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell", inline: <<-SHELL
 
 cd /go/src/github.com/liquidweb/kube-cert-manager
-./vm_build.sh
+./dev-setup/vm_build.sh
 
   SHELL
 

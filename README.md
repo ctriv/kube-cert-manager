@@ -55,3 +55,7 @@ to be managed by the certificate manager has changed, from the `enabled` annotat
 * [Certificate Resources](docs/certificate-resources.md)
 * [Challenge Providers](docs/providers.md)
 * [Building Container Image with AWS CodeBuild](codebuild/README.md)
+
+## Development Setup
+
+* [Dev Setup Readme](dev-setup/README.md)
