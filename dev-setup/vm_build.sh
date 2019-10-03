@@ -10,7 +10,8 @@ sudo apt-get update
 sudo apt-get install -y golang-go
 sudo mkdir /go/bin
 sudo mkdir /go/pkg
-export GOPATH=/go
+echo "export GOPATH=/go" >> /home/vagrant/.bashrc
+source /home/vagrant/.bashrc
 
 echo "***************************** Install psql *****************************************"
 sudo apt install -y postgresql-client-common
@@ -25,7 +26,7 @@ sudo apt install -y docker-ce
 sudo apt install -y docker-compose
 
 echo "***************************** Spin up Postgres DB **********************************"
-cd dev-setup
+cd /go/src/github.com/liquidweb/kube-cert-manager/dev-setup
 sudo docker-compose up -d
 
 echo "***************************** Install Boulder **************************************"

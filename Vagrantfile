@@ -48,6 +48,5 @@ cd /go/src/github.com/liquidweb/kube-cert-manager
 
   SHELL
 
-#  config.vm.provision :docker
-#  config.vm.provision :docker_compose, yml: "/mwp/docker-compose.yaml", run: "always"
+  config.vm.provision :shell, path: "dev-setup/vm_run.sh", run: 'always'
 end
