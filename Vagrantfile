@@ -43,8 +43,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # documentation for more information about their specific syntax and use.
   config.vm.provision "shell", inline: <<-SHELL
 
-cd /home/vagrant/go/src/github.com/liquidweb/kube-cert-manager
-./dev-setup/vm_build.sh
+export GOPATH=/home/vagrant/go
+export KCM=$GOPATH/src/github.com/liquidweb/kube-cert-manager
+
+cd $KCM/dev-setup
+./vm_build.sh
 
   SHELL
 

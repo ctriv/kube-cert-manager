@@ -1,7 +1,8 @@
 export GOPATH=/home/vagrant/go
+export KCM=$GOPATH/src/github.com/liquidweb/kube-cert-manager
 
 echo "***************************** Spin up Postgres DB **********************************"
-cd $GOPATH/src/github.com/liquidweb/kube-cert-manager/dev-setup
+cd $KCM/dev-setup
 sudo docker-compose up -d
 
 echo "***************************** Spin up Boulder **************************************"

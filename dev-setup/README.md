@@ -6,6 +6,8 @@ postgres instance.
 
 ## Pre-Installation
 1. Make sure you have `vagrant` and `virtual box` installed
+2. Modify your kube [config](config) file with correct minikube server ip and port
+3. Modify your [client.crt](client.crt), [client.key](client.key), and [ca.crt](ca.crt) files with correct minikube keys
 
 ## Installation Instructions
 1. git clone this repo

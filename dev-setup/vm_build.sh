@@ -9,8 +9,9 @@ sudo add-apt-repository -y ppa:longsleep/golang-backports
 sudo apt-get update
 sudo apt-get install -y golang-go
 sudo apt-get install -y go-dep
-export GOPATH=/home/vagrant/go
+
 echo "export GOPATH=/home/vagrant/go" >> /home/vagrant/.bashrc
+echo "export KCM=$GOPATH/src/github.com/liquidweb/kube-cert-manager" >> /home/vagrant/.bashrc
 sudo mkdir $GOPATH/bin
 sudo mkdir $GOPATH/pkg
 
@@ -27,7 +28,7 @@ sudo apt install -y docker-ce
 sudo apt install -y docker-compose
 
 echo "***************************** Spin up Postgres DB **********************************"
-cd $GOPATH/src/github.com/liquidweb/kube-cert-manager/dev-setup
+cd $KCM/dev-setup
 sudo docker-compose up -d
 
 echo "***************************** Install Boulder **************************************"
@@ -36,3 +37,24 @@ cd $GOPATH/src/github.com/letsencrypt
 sudo git clone https://github.com/letsencrypt/boulder.git
 cd boulder
 sudo docker-compose up -d
+
+echo "***************************** Setup K8s ********************************************"
+sudo apt-get update && sudo apt-get install -y apt-transport-https
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y kubectl
+
+sudo mkdir /home/vagrant/.kube
+
+files=(
+    config
+    ca.crt
+    client.crt
+    client.key
+)
+
+for file in "${files[@]}"
+do
+    sudo cp $KCM/dev-setup/$file /home/vagrant/.kube
+done

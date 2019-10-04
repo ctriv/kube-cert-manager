@@ -1,0 +1,19 @@
+apiVersion: v1
+clusters:
+- cluster:
+    certificate-authority: /home/vagrant/.kube/ca.crt
+    server: https://{MINKUBE IP ADDRESS}:{MINIKUBE PORT}
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+  user:
+    client-certificate: /home/vagrant/.kube/client.crt
+    client-key: /home/vagrant/.kube/client.key
