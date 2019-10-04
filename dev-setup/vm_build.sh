@@ -36,6 +36,7 @@ sudo mkdir $GOPATH/src/github.com/letsencrypt
 cd $GOPATH/src/github.com/letsencrypt
 sudo git clone https://github.com/letsencrypt/boulder.git
 cd boulder
+sudo sed -i "s/FAKE_DNS: .*/FAKE_DNS: $(ifconfig docker0 | grep "inet" | awk '{ print $2}')/" docker-compose.yml
 sudo docker-compose up -d
 
 echo "***************************** Setup K8s ********************************************"
