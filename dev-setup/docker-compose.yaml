@@ -1,0 +1,10 @@
+version: '3.0'
+services:
+  db:
+    image: postgres:9.5
+    environment:
+      - POSTGRES_PASSWORD=kcm
+      - POSTGRES_USER=kcm
+      - POSTGRES_DB=kcm
+    ports:
+      - '15432:5432'
