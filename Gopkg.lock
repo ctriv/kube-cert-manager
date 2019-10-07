@@ -23,6 +23,12 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  name = "github.com/cloudflare/cloudflare-go"
+  packages = ["."]
+  revision = "fb8ca9db44472016d4a8d99e9b5bbab4e387de19"
+  version = "v0.10.3"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
@@ -31,12 +37,14 @@
 [[projects]]
   name = "github.com/decker502/dnspod-go"
   packages = ["."]
-  revision = "f33a2c6040fc2550a631de7b3a53bddccdcd73fb"
+  revision = "71fbbdbdf1a7eeac949586de15bf96d416d3dd63"
+  version = "v0.2.0"
 
 [[projects]]
   name = "github.com/dnsimple/dnsimple-go"
   packages = ["dnsimple"]
-  revision = "84b1b693f39ee2d2749fd651148024c014679dbd"
+  revision = "7e193cc468a07cdf74d76de1e6736c709c5a3872"
+  version = "v0.30.0"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -61,6 +69,12 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/go-acme/lego"
+  packages = ["acme","log","providers/dns/cloudflare","providers/dns/digitalocean","providers/dns/dnsimple","providers/dns/dnsmadeeasy","providers/dns/dnspod","providers/dns/dyn","providers/dns/gandi","providers/dns/gcloud","providers/dns/linode","providers/dns/namecheap","providers/dns/ovh","providers/dns/pdns","providers/dns/rfc2136","providers/dns/route53","providers/dns/vultr"]
+  revision = "286c44337e7fb0b3aceaf71c42448e887a6db218"
+  version = "v1.2.1"
+
+[[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
   revision = "c787282c39ac1fc618827141a1f762240def08a3"
@@ -76,6 +90,12 @@
   name = "github.com/golang/glog"
   packages = ["."]
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/golang/groupcache"
+  packages = ["lru"]
+  revision = "404acd9df4cc9859d64fb9eed42e5c026187287a"
 
 [[projects]]
   name = "github.com/golang/protobuf"
@@ -98,6 +118,12 @@
   name = "github.com/google/gofuzz"
   packages = ["."]
   revision = "bbcb9da2d746f8bdbd6a936686a0a6067ada0ec5"
+
+[[projects]]
+  name = "github.com/googleapis/gax-go"
+  packages = ["v2"]
+  revision = "bd5b16380fd03dc758d11cef74ba2e3bc8b0e8c2"
+  version = "v2.0.5"
 
 [[projects]]
   name = "github.com/googleapis/gnostic"
@@ -211,9 +237,10 @@
   version = "1.0.1"
 
 [[projects]]
+  branch = "master"
   name = "github.com/ovh/go-ovh"
   packages = ["ovh"]
-  revision = "4b1fea467323b74c5f462f0947f402b428ca0626"
+  revision = "ba5adb4cf0148a3dbdbd30586f075266256a77b1"
 
 [[projects]]
   name = "github.com/pelletier/go-toml"
@@ -317,33 +344,43 @@
 
 [[projects]]
   name = "github.com/xenolf/lego"
-  packages = ["acme","providers/dns/cloudflare","providers/dns/digitalocean","providers/dns/dnsimple","providers/dns/dnsmadeeasy","providers/dns/dnspod","providers/dns/dyn","providers/dns/gandi","providers/dns/googlecloud","providers/dns/linode","providers/dns/namecheap","providers/dns/ovh","providers/dns/pdns","providers/dns/rfc2136","providers/dns/route53","providers/dns/vultr"]
-  revision = "5dfe609afb1ebe9da97c9846d97a55415e5a5ccd"
+  packages = ["acme","log","platform/config/env"]
+  revision = "295dd66f2aa549685e3d6b95c1813881a7807158"
+  version = "v2.7.2"
 
 [[projects]]
+  name = "go.opencensus.io"
+  packages = [".","internal","internal/tagencoding","metric/metricdata","metric/metricproducer","plugin/ochttp","plugin/ochttp/propagation/b3","resource","stats","stats/internal","stats/view","tag","trace","trace/internal","trace/propagation","trace/tracestate"]
+  revision = "59d1ce35d30f3c25ba762169da2a37eab6ffa041"
+  version = "v0.22.1"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ocsp","ssh/terminal"]
-  revision = "1f22c0103821b9390939b6776727195525381532"
+  packages = ["ed25519","ed25519/internal/edwards25519","ocsp","pbkdf2","ssh/terminal"]
+  revision = "34f69633bfdcf9db92f698f8487115767eebef81"
 
 [[projects]]
+  branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","lex/httplex","publicsuffix"]
-  revision = "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
+  packages = ["context","context/ctxhttp","http/httpguts","http2","http2/hpack","idna","internal/timeseries","trace"]
+  revision = "d98b1b4438230571bd7fbc5aaa89843e92937bd3"
 
 [[projects]]
+  branch = "master"
   name = "golang.org/x/oauth2"
   packages = [".","google","internal","jws","jwt"]
-  revision = "3c3a985cb79f52a3190fbc056984415ca6763d01"
+  revision = "0f29369cfe4552d0e4bcddc57cc75f4d7e672a33"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = ["unix","windows"]
   revision = "7c4c994c65f702f41ed7d6620a2cb34107576a77"
 
 [[projects]]
   name = "golang.org/x/text"
-  packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
@@ -354,14 +391,27 @@
   revision = "85acf8d2951cb2a3bde7632f9ff273ef0379bcbd"
 
 [[projects]]
+  branch = "master"
   name = "google.golang.org/api"
-  packages = ["dns/v1","gensupport","googleapi","googleapi/internal/uritemplates"]
-  revision = "4cbdde7d4ee4bb5f6d6da987a182c3f1dfeb9cd6"
+  packages = ["dns/v1","googleapi","googleapi/internal/uritemplates","googleapi/transport","internal","internal/gensupport","option","transport/http","transport/http/internal/propagation"]
+  revision = "d7272b84207dfaf3e6436bd41179c2bd4691316d"
 
 [[projects]]
   name = "google.golang.org/appengine"
   packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/urlfetch","urlfetch"]
   revision = "4f7eeb5305a4ba1966344836ba4af9996b7b4e05"
+
+[[projects]]
+  branch = "master"
+  name = "google.golang.org/genproto"
+  packages = ["googleapis/rpc/status"]
+  revision = "aa923e3a3354fb67e67d0e5f1475674566710f57"
+
+[[projects]]
+  name = "google.golang.org/grpc"
+  packages = [".","balancer","balancer/base","balancer/roundrobin","binarylog/grpc_binarylog_v1","codes","connectivity","credentials","credentials/internal","encoding","encoding/proto","grpclog","internal","internal/backoff","internal/balancerload","internal/binarylog","internal/channelz","internal/envconfig","internal/grpcrand","internal/grpcsync","internal/syscall","internal/transport","keepalive","metadata","naming","peer","resolver","resolver/dns","resolver/passthrough","serviceconfig","stats","status","tap"]
+  revision = "f6d0f9ee430895e87ef1ceb5ac8f39725bafceef"
+  version = "v1.24.0"
 
 [[projects]]
   name = "gopkg.in/gormigrate.v1"
@@ -382,10 +432,10 @@
   version = "v1.28.2"
 
 [[projects]]
-  name = "gopkg.in/square/go-jose.v1"
+  name = "gopkg.in/square/go-jose.v2"
   packages = [".","cipher","json"]
-  revision = "aa2e30fdd1fe9dd3394119af66451ae790d50e0d"
-  version = "v1.1.0"
+  revision = "730df5f748271903322feb182be83b43ebbbe27d"
+  version = "v2.3.1"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -414,6 +464,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c0af5478b2f56ddfcaad5345123d7ebecb781773bd1483aa7229d5b963cbaa00"
+  inputs-digest = "fab7166733b5edcdda2e7eb33a82ec7336b6c711396d22f115c308c63b87576d"
   solver-name = "gps-cdcl"
   solver-version = 1

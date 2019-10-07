@@ -29,22 +29,22 @@ import (
 	"github.com/gammazero/workerpool"
 	"github.com/pkg/errors"
 	"github.com/vburenin/nsync"
-	"github.com/xenolf/lego/acme"
-	"github.com/xenolf/lego/providers/dns/cloudflare"
-	"github.com/xenolf/lego/providers/dns/digitalocean"
-	"github.com/xenolf/lego/providers/dns/dnsimple"
-	"github.com/xenolf/lego/providers/dns/dnsmadeeasy"
-	"github.com/xenolf/lego/providers/dns/dnspod"
-	"github.com/xenolf/lego/providers/dns/dyn"
-	"github.com/xenolf/lego/providers/dns/gandi"
-	"github.com/xenolf/lego/providers/dns/googlecloud"
-	"github.com/xenolf/lego/providers/dns/linode"
-	"github.com/xenolf/lego/providers/dns/namecheap"
-	"github.com/xenolf/lego/providers/dns/ovh"
-	"github.com/xenolf/lego/providers/dns/pdns"
-	"github.com/xenolf/lego/providers/dns/rfc2136"
-	"github.com/xenolf/lego/providers/dns/route53"
-	"github.com/xenolf/lego/providers/dns/vultr"
+	"github.com/go-acme/lego/acme"
+	"github.com/go-acme/lego/providers/dns/cloudflare"
+	"github.com/go-acme/lego/providers/dns/digitalocean"
+	"github.com/go-acme/lego/providers/dns/dnsimple"
+	"github.com/go-acme/lego/providers/dns/dnsmadeeasy"
+	"github.com/go-acme/lego/providers/dns/dnspod"
+	"github.com/go-acme/lego/providers/dns/dyn"
+	"github.com/go-acme/lego/providers/dns/gandi"
+	"github.com/go-acme/lego/providers/dns/gcloud"
+	"github.com/go-acme/lego/providers/dns/linode"
+	"github.com/go-acme/lego/providers/dns/namecheap"
+	"github.com/go-acme/lego/providers/dns/ovh"
+	"github.com/go-acme/lego/providers/dns/pdns"
+	"github.com/go-acme/lego/providers/dns/rfc2136"
+	"github.com/go-acme/lego/providers/dns/route53"
+	"github.com/go-acme/lego/providers/dns/vultr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -141,7 +141,7 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 	case "gandi":
 		return initDNSProvider(gandi.NewDNSProvider())
 	case "googlecloud":
-		return initDNSProvider(googlecloud.NewDNSProvider())
+		return initDNSProvider(gcloud.NewDNSProvider())
 	case "linode":
 		return initDNSProvider(linode.NewDNSProvider())
 	case "namecheap":
