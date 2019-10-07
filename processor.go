@@ -585,7 +585,7 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		// fill in data
 		acmeCert.Cert = certRes.Certificate
 		acmeCert.PrivateKey = certRes.PrivateKey
-		acmeCertDetails = NewACMECertDetailsFromResource(certRes)
+		acmeCertDetails = NewACMECertDetailsFromResource(*certRes)
 	} else {
 		if err := json.Unmarshal(certDetailsRaw, &acmeCertDetails); err != nil {
 			return p.NoteCertError(cert, err, "Error while unmarshalling cert details for existing domain %v", cert.Spec.Domain)
@@ -596,15 +596,15 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		certRes.Certificate = acmeCert.Cert
 		certRes.PrivateKey = acmeCert.PrivateKey
 
-		certRes, err = acmeClient.RenewCertificate(certRes, true, false)
+		newCertRes, err := acmeClient.RenewCertificate(certRes, true, false)
 		if err != nil {
 			return p.NoteCertError(cert, err, "Error while renewing certificate for existing domain %v", cert.Spec.Domain)
 		}
 
 		// Fill in details
-		acmeCert.Cert = certRes.Certificate
-		acmeCert.PrivateKey = certRes.PrivateKey
-		acmeCertDetails = NewACMECertDetailsFromResource(certRes)
+		acmeCert.Cert = newCertRes.Certificate
+		acmeCert.PrivateKey = newCertRes.PrivateKey
+		acmeCertDetails = NewACMECertDetailsFromResource(*newCertRes)
 	}
 
 	// Serialize acmeCertDetails and acmeUserInfo
