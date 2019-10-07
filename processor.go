@@ -27,8 +27,6 @@ import (
 	"time"
 
 	"github.com/gammazero/workerpool"
-	"github.com/pkg/errors"
-	"github.com/vburenin/nsync"
 	"github.com/go-acme/lego/acme"
 	"github.com/go-acme/lego/providers/dns/cloudflare"
 	"github.com/go-acme/lego/providers/dns/digitalocean"
@@ -45,6 +43,8 @@ import (
 	"github.com/go-acme/lego/providers/dns/rfc2136"
 	"github.com/go-acme/lego/providers/dns/route53"
 	"github.com/go-acme/lego/providers/dns/vultr"
+	"github.com/pkg/errors"
+	"github.com/vburenin/nsync"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -116,7 +116,7 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 			return nil, nil, errors.Wrapf(err, "Error while setting challenge provider %v for dns-01", provider)
 		}
 
-		acmeClient.ExcludeChallenges([]acme.Challenge{acme.HTTP01, acme.TLSSNI01})
+		acmeClient.ExcludeChallenges([]acme.Challenge{acme.HTTP01, acme.TLSALPN01})
 		return acmeClient, nil, nil
 	}
 
@@ -124,7 +124,7 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 	case "http":
 		acmeClient.SetHTTPAddress(":5002")
 		acmeClient.SetChallengeProvider(acme.HTTP01, p.httpProvider)
-		acmeClient.ExcludeChallenges([]acme.Challenge{acme.DNS01, acme.TLSSNI01})
+		acmeClient.ExcludeChallenges([]acme.Challenge{acme.DNS01, acme.TLSALPN01})
 		return acmeClient, nil, nil
 	case "cloudflare":
 		return initDNSProvider(cloudflare.NewDNSProvider())
@@ -552,14 +552,10 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		}
 
 		// Register
-		acmeUserInfo.Registration, err = acmeClient.Register()
+		agreedToTos := true
+		acmeUserInfo.Registration, err = acmeClient.Register(agreedToTos)
 		if err != nil {
 			return p.NoteCertError(cert, err, "Error while registering user for new domain %v", cert.Spec.Domain)
-		}
-
-		// Agree to TOS
-		if err := acmeClient.AgreeToTOS(); err != nil {
-			return p.NoteCertError(cert, err, "Error while agreeing to acme TOS for new domain %v", cert.Spec.Domain)
 		}
 
 		userInfoRaw, err = json.Marshal(&acmeUserInfo)
@@ -580,12 +576,11 @@ func (p *CertProcessor) processCertificate(cert Certificate, forMaint bool) (boo
 		acmeCert.DomainName = cert.Spec.Domain
 
 		// Obtain a cert
-		certRes, errs := acmeClient.ObtainCertificate(domains, true, nil, false)
-		for _, domain := range domains {
-			if errs[domain] != nil {
-				return p.NoteCertError(cert, errs[domain], "Error while obtaining certificate for new domain %v", domain)
-			}
+		certRes, err := acmeClient.ObtainCertificate(domains, true, nil, false)
+		if err != nil {
+			return p.NoteCertError(cert, err, "Error while obtaining certificate for new domain")
 		}
+
 
 		// fill in data
 		acmeCert.Cert = certRes.Certificate
