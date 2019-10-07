@@ -28,21 +28,6 @@ import (
 
 	"github.com/gammazero/workerpool"
 	"github.com/go-acme/lego/acme"
-	"github.com/go-acme/lego/providers/dns/cloudflare"
-	"github.com/go-acme/lego/providers/dns/digitalocean"
-	"github.com/go-acme/lego/providers/dns/dnsimple"
-	"github.com/go-acme/lego/providers/dns/dnsmadeeasy"
-	"github.com/go-acme/lego/providers/dns/dnspod"
-	"github.com/go-acme/lego/providers/dns/dyn"
-	"github.com/go-acme/lego/providers/dns/gandi"
-	"github.com/go-acme/lego/providers/dns/gcloud"
-	"github.com/go-acme/lego/providers/dns/linode"
-	"github.com/go-acme/lego/providers/dns/namecheap"
-	"github.com/go-acme/lego/providers/dns/ovh"
-	"github.com/go-acme/lego/providers/dns/pdns"
-	"github.com/go-acme/lego/providers/dns/rfc2136"
-	"github.com/go-acme/lego/providers/dns/route53"
-	"github.com/go-acme/lego/providers/dns/vultr"
 	"github.com/pkg/errors"
 	"github.com/vburenin/nsync"
 	"k8s.io/client-go/kubernetes"
@@ -107,56 +92,20 @@ func (p *CertProcessor) newACMEClient(acmeUser acme.User, provider string) (*acm
 		return nil, nil, errors.Wrap(err, "Error while generating acme client")
 	}
 
-	initDNSProvider := func(p acme.ChallengeProvider, err error) (*acme.Client, *sync.Mutex, error) {
+	if provider == "http" {
+		err := acmeClient.SetHTTPAddress(":5002")
 		if err != nil {
-			return nil, nil, errors.Wrapf(err, "Error while initializing challenge provider %v", provider)
+			return nil, nil, errors.Errorf("Issue with setting HTTP Address: %v", err)
 		}
 
-		if err := acmeClient.SetChallengeProvider(acme.DNS01, p); err != nil {
-			return nil, nil, errors.Wrapf(err, "Error while setting challenge provider %v for dns-01", provider)
+		err = acmeClient.SetChallengeProvider(acme.HTTP01, p.httpProvider)
+		if err != nil {
+			return nil, nil, errors.Errorf("Issue with setting Challenge Provider: %v", err)
 		}
 
-		acmeClient.ExcludeChallenges([]acme.Challenge{acme.HTTP01, acme.TLSALPN01})
-		return acmeClient, nil, nil
-	}
-
-	switch provider {
-	case "http":
-		acmeClient.SetHTTPAddress(":5002")
-		acmeClient.SetChallengeProvider(acme.HTTP01, p.httpProvider)
 		acmeClient.ExcludeChallenges([]acme.Challenge{acme.DNS01, acme.TLSALPN01})
 		return acmeClient, nil, nil
-	case "cloudflare":
-		return initDNSProvider(cloudflare.NewDNSProvider())
-	case "digitalocean":
-		return initDNSProvider(digitalocean.NewDNSProvider())
-	case "dnsimple":
-		return initDNSProvider(dnsimple.NewDNSProvider())
-	case "dnsmadeeasy":
-		return initDNSProvider(dnsmadeeasy.NewDNSProvider())
-	case "dnspod":
-		return initDNSProvider(dnspod.NewDNSProvider())
-	case "dyn":
-		return initDNSProvider(dyn.NewDNSProvider())
-	case "gandi":
-		return initDNSProvider(gandi.NewDNSProvider())
-	case "googlecloud":
-		return initDNSProvider(gcloud.NewDNSProvider())
-	case "linode":
-		return initDNSProvider(linode.NewDNSProvider())
-	case "namecheap":
-		return initDNSProvider(namecheap.NewDNSProvider())
-	case "ovh":
-		return initDNSProvider(ovh.NewDNSProvider())
-	case "pdns":
-		return initDNSProvider(pdns.NewDNSProvider())
-	case "rfc2136":
-		return initDNSProvider(rfc2136.NewDNSProvider())
-	case "route53":
-		return initDNSProvider(route53.NewDNSProvider())
-	case "vultr":
-		return initDNSProvider(vultr.NewDNSProvider())
-	default:
+	} else {
 		return nil, nil, errors.Errorf("Unknown provider %v", provider)
 	}
 }
