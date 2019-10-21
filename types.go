@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/xenolf/lego/acme"
+	"github.com/go-acme/lego/acme"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 

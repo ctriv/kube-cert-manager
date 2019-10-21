@@ -2,21 +2,6 @@
 
 
 [[projects]]
-  name = "cloud.google.com/go"
-  packages = ["compute/metadata","internal"]
-  revision = "3b1ae45394a234c385be014e9a488f2bb6eef821"
-
-[[projects]]
-  name = "github.com/JamesClonk/vultr"
-  packages = ["lib"]
-  revision = "2fd0705ce648e602e6c9c57329a174270a4f6688"
-
-[[projects]]
-  name = "github.com/aws/aws-sdk-go"
-  packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/defaults","aws/ec2metadata","aws/request","aws/session","private/endpoints","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","private/signer/v4","service/route53"]
-  revision = "49c3892b61af1d4996292a3025f36e4dfa25eaee"
-
-[[projects]]
   branch = "master"
   name = "github.com/beorn7/perks"
   packages = ["quantile"]
@@ -27,16 +12,6 @@
   packages = ["spew"]
   revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
   version = "v1.1.1"
-
-[[projects]]
-  name = "github.com/decker502/dnspod-go"
-  packages = ["."]
-  revision = "f33a2c6040fc2550a631de7b3a53bddccdcd73fb"
-
-[[projects]]
-  name = "github.com/dnsimple/dnsimple-go"
-  packages = ["dnsimple"]
-  revision = "84b1b693f39ee2d2749fd651148024c014679dbd"
 
 [[projects]]
   name = "github.com/fsnotify/fsnotify"
@@ -61,9 +36,10 @@
   version = "v1.0.0"
 
 [[projects]]
-  name = "github.com/go-ini/ini"
-  packages = ["."]
-  revision = "c787282c39ac1fc618827141a1f762240def08a3"
+  name = "github.com/go-acme/lego"
+  packages = ["acme"]
+  revision = "286c44337e7fb0b3aceaf71c42448e887a6db218"
+  version = "v1.2.1"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -88,11 +64,6 @@
   name = "github.com/google/btree"
   packages = ["."]
   revision = "4030bb1f1f0c35b30ca7009e9ebd06849dd45306"
-
-[[projects]]
-  name = "github.com/google/go-querystring"
-  packages = ["query"]
-  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
 
 [[projects]]
   name = "github.com/google/gofuzz"
@@ -154,20 +125,10 @@
   revision = "04140366298a54a039076d798123ffa108fff46c"
 
 [[projects]]
-  name = "github.com/jmespath/go-jmespath"
-  packages = ["."]
-  revision = "bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d"
-
-[[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
   revision = "1624edc4454b8682399def8740d46db5e4362ba4"
   version = "v1.1.5"
-
-[[projects]]
-  name = "github.com/juju/ratelimit"
-  packages = ["."]
-  revision = "77ed1c8a01217656d2080ad51981f6e99adaa177"
 
 [[projects]]
   branch = "master"
@@ -209,11 +170,6 @@
   packages = ["."]
   revision = "4b7aa43c6742a2c18fdef89dd197aaae7dac7ccd"
   version = "1.0.1"
-
-[[projects]]
-  name = "github.com/ovh/go-ovh"
-  packages = ["ovh"]
-  revision = "4b1fea467323b74c5f462f0947f402b428ca0626"
 
 [[projects]]
   name = "github.com/pelletier/go-toml"
@@ -305,45 +261,37 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/timewasted/linode"
-  packages = [".","dns"]
-  revision = "37e84520dcf74488f67654f9c775b9752c232dc1"
-
-[[projects]]
-  branch = "master"
   name = "github.com/vburenin/nsync"
   packages = ["."]
   revision = "9a75d1c80410815ac45d65fc01ccabac9c98dd4a"
 
 [[projects]]
   name = "github.com/xenolf/lego"
-  packages = ["acme","providers/dns/cloudflare","providers/dns/digitalocean","providers/dns/dnsimple","providers/dns/dnsmadeeasy","providers/dns/dnspod","providers/dns/dyn","providers/dns/gandi","providers/dns/googlecloud","providers/dns/linode","providers/dns/namecheap","providers/dns/ovh","providers/dns/pdns","providers/dns/rfc2136","providers/dns/route53","providers/dns/vultr"]
-  revision = "5dfe609afb1ebe9da97c9846d97a55415e5a5ccd"
+  packages = ["log"]
+  revision = "295dd66f2aa549685e3d6b95c1813881a7807158"
+  version = "v2.7.2"
 
 [[projects]]
+  branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["ocsp","ssh/terminal"]
-  revision = "1f22c0103821b9390939b6776727195525381532"
+  packages = ["ed25519","ed25519/internal/edwards25519","ocsp","pbkdf2","ssh/terminal"]
+  revision = "34f69633bfdcf9db92f698f8487115767eebef81"
 
 [[projects]]
+  branch = "master"
   name = "golang.org/x/net"
-  packages = ["context","context/ctxhttp","http2","http2/hpack","idna","lex/httplex","publicsuffix"]
-  revision = "e90d6d0afc4c315a0d87a568ae68577cc15149a0"
-
-[[projects]]
-  name = "golang.org/x/oauth2"
-  packages = [".","google","internal","jws","jwt"]
-  revision = "3c3a985cb79f52a3190fbc056984415ca6763d01"
+  packages = ["http/httpguts","http2","http2/hpack","idna"]
+  revision = "d98b1b4438230571bd7fbc5aaa89843e92937bd3"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["unix"]
+  packages = ["unix","windows"]
   revision = "7c4c994c65f702f41ed7d6620a2cb34107576a77"
 
 [[projects]]
   name = "golang.org/x/text"
-  packages = ["internal/gen","internal/triegen","internal/ucd","transform","unicode/cldr","unicode/norm"]
+  packages = ["collate","collate/build","internal/colltab","internal/gen","internal/tag","internal/triegen","internal/ucd","language","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
@@ -352,16 +300,6 @@
   name = "golang.org/x/time"
   packages = ["rate"]
   revision = "85acf8d2951cb2a3bde7632f9ff273ef0379bcbd"
-
-[[projects]]
-  name = "google.golang.org/api"
-  packages = ["dns/v1","gensupport","googleapi","googleapi/internal/uritemplates"]
-  revision = "4cbdde7d4ee4bb5f6d6da987a182c3f1dfeb9cd6"
-
-[[projects]]
-  name = "google.golang.org/appengine"
-  packages = [".","internal","internal/app_identity","internal/base","internal/datastore","internal/log","internal/modules","internal/remote_api","internal/urlfetch","urlfetch"]
-  revision = "4f7eeb5305a4ba1966344836ba4af9996b7b4e05"
 
 [[projects]]
   name = "gopkg.in/gormigrate.v1"
@@ -376,16 +314,10 @@
   version = "v0.9.0"
 
 [[projects]]
-  name = "gopkg.in/ini.v1"
-  packages = ["."]
-  revision = "20b96f641a5ea98f2f8619ff4f3e061cff4833bd"
-  version = "v1.28.2"
-
-[[projects]]
-  name = "gopkg.in/square/go-jose.v1"
+  name = "gopkg.in/square/go-jose.v2"
   packages = [".","cipher","json"]
-  revision = "aa2e30fdd1fe9dd3394119af66451ae790d50e0d"
-  version = "v1.1.0"
+  revision = "730df5f748271903322feb182be83b43ebbbe27d"
+  version = "v2.3.1"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
@@ -414,6 +346,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c0af5478b2f56ddfcaad5345123d7ebecb781773bd1483aa7229d5b963cbaa00"
+  inputs-digest = "f8d6a288ba473e8a9ed81eda9b8f1f82bdce956a5f2ae84f6ed553fda0708b1b"
   solver-name = "gps-cdcl"
   solver-version = 1

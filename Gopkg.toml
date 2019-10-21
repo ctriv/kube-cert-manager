@@ -26,6 +26,10 @@
 
 
 [[constraint]]
+  name = "github.com/go-acme/lego"
+  version = "1.0.0"
+
+[[constraint]]
   name = "github.com/gorilla/mux"
   version = "~1.6.2"
 
